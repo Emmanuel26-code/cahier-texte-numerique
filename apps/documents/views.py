@@ -1,16 +1,19 @@
-
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+
+from apps.comptes.models import Utilisateur
+from apps.comptes.permissions import role_requis
 
 from .forms import DocumentForm
 from .models import Document
 
+Role = Utilisateur.Role
 
-@login_required
+
+@role_requis(Role.PROFESSEUR)
 def importer(request):
     if request.method == "POST":
-        form = DocumentForm(request.POST, request.FILES)  
+        form = DocumentForm(request.POST, request.FILES) 
         if form.is_valid():
             form.save()
             messages.success(request, "Document importé avec succès.")
@@ -20,7 +23,7 @@ def importer(request):
     return render(request, "documents/importer.html", {"form": form})
 
 
-@login_required
+@role_requis(Role.PROFESSEUR, Role.ADMINISTRATEUR)
 def liste(request):
     documents = Document.objects.all()
     return render(request, "documents/liste.html", {"documents": documents})

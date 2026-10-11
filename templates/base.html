@@ -17,6 +17,12 @@
 <body>
   <nav>
     <a href="{% url 'accueil' %}">Accueil</a>
+    {% if user.est_professeur or user.est_administrateur %}
+      <a href="{% url 'documents:liste' %}">Documents</a>
+    {% endif %}
+    {% if user.est_professeur %}
+      <a href="{% url 'documents:importer' %}">Importer un cours</a>
+    {% endif %}
     {% if user.is_authenticated %}
       <span>{{ user.get_full_name|default:user.username }} ({{ user.get_role_display }})</span>
       <form method="post" action="{% url 'logout' %}">
