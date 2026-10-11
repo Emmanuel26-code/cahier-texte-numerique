@@ -1,7 +1,10 @@
-<!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cahier de texte numérique</title></head>
-<body style="font-family:sans-serif;max-width:40rem;margin:3rem auto;padding:0 1rem">
-<h1>Cahier de texte numérique</h1>
-<p>Le projet Django est bien initialisé.</p>
-</body></html>
+{% extends "base.html" %}
+
+{% block contenu %}
+  <h1>Cahier de texte numérique</h1>
+  {% if user.is_authenticated %}
+    <p>Bienvenue {{ user.first_name|default:user.username }} !</p>
+  {% else %}
+    <p>Connectez-vous ou créez un compte pour accéder au cahier de texte.</p>
+  {% endif %}
+{% endblock %}
