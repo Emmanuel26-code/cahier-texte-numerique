@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titre %}Cahier de texte numérique{% endblock %}</title>
+  <style>
+    body { font-family: sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
+    nav { display: flex; gap: 1rem; align-items: center; margin-bottom: 2rem; }
+    nav form { display: inline; }
+    form p { margin: 0.8rem 0; }
+    input, select { padding: 0.4rem; width: 100%; max-width: 20rem; box-sizing: border-box; }
+    button { padding: 0.5rem 1rem; cursor: pointer; }
+    .errorlist { color: #b00020; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="{% url 'accueil' %}">Accueil</a>
+    {% if user.is_authenticated %}
+      <span>{{ user.get_full_name|default:user.username }} ({{ user.get_role_display }})</span>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit">Se déconnecter</button>
+      </form>
+    {% else %}
+      <a href="{% url 'login' %}">Se connecter</a>
+      <a href="{% url 'inscription' %}">S'inscrire</a>
+    {% endif %}
+  </nav>
+  {% block contenu %}{% endblock %}
+</body>
+</html>
