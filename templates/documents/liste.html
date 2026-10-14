@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block titre %}Documents{% endblock %}
+
+{% block contenu %}
+  <h1>Documents importés</h1>
+  {% for message in messages %}
+    <p>{{ message }}</p>
+  {% endfor %}
+  <p><a href="{% url 'documents:importer' %}">Importer un document</a></p>
+  <ul>
+    {% for document in documents %}
+      <li>{{ document.nom_original }} ({{ document.taille_octets|filesizeformat }}){% if document.chapitre %} — {{ document.chapitre }}{% endif %}</li>
+    {% empty %}
+      <li>Aucun document pour le moment.</li>
+    {% endfor %}
+  </ul>
+{% endblock %}
