@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titre %}Cahier de texte numérique{% endblock %}</title>
+<style>
+  body{margin:0;font-family:system-ui,sans-serif;background:#F3F6FA;color:#14213D;line-height:1.5}
+  header.bandeau{background:#0F2A4A;color:#fff;padding:12px 24px;display:flex;flex-wrap:wrap;gap:12px;
+    justify-content:space-between;align-items:center}
+  header.bandeau a,header.bandeau button{color:#fff}
+  main{max-width:1100px;margin:0 auto;padding:32px 24px;display:flex;flex-direction:column;gap:24px}
+  h1{margin:0;font-size:1.9rem} h2{margin:0 0 12px;font-size:1.15rem}
+  .carte{background:#fff;border:1px solid #DDE3EC;border-radius:12px;padding:24px}
+  .grille{display:flex;flex-wrap:wrap;gap:16px} .grille>*{flex:1 1 240px}
+  .devoir{border:1px solid #DDE3EC;border-radius:10px;padding:16px}
+  .discret{color:#4A5568;font-size:.9rem}
+  .pastille{display:inline-block;padding:2px 10px;border-radius:999px;background:#E3EDF8;color:#0F3F73;font-size:.85rem;font-weight:600}
+  ul.liste{list-style:none;margin:0;padding:0} ul.liste li{padding:12px 0;border-bottom:1px solid #EEF2F7}
+</style>
+</head>
+<body>
+<header class="bandeau">
+  <strong>Cahier de texte numérique</strong>
+  {% block cloche %}{% endblock %}
+  <form method="post" action="{% url 'comptes:deconnexion' %}">{% csrf_token %}
+    <span class="discret" style="color:#C9D6E6">{{ request.user.get_full_name|default:request.user.username }}</span>
+    <button type="submit">Se déconnecter</button>
+  </form>
+</header>
+<main>{% block contenu %}{% endblock %}</main>
+</body>
+</html>

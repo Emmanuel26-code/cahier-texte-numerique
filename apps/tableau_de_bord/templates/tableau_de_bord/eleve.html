@@ -1,0 +1,62 @@
+{% extends "tableau_de_bord/base.html" %}
+{% block titre %}Tableau de bord – Élève{% endblock %}
+{% block cloche %}
+<a href="{% url 'notifications:liste' %}" aria-label="Notifications : {{ nb_non_lues }} non lue{{ nb_non_lues|pluralize }}">
+  Notifications{% if nb_non_lues %} <span class="pastille">{{ nb_non_lues }}</span>{% endif %}
+</a>
+{% endblock %}
+{% block contenu %}
+<div>
+  <h1>Bonjour, {{ request.user.first_name|default:request.user.username }}</h1>
+  <p class="discret">{% if request.user.classe %}Classe : {{ request.user.classe }} · {% endif %}Voici ce qu’il y a à faire.</p>
+</div>
+
+{% if sans_classe %}
+<section class="carte">
+  <h2>Aucune classe</h2>
+  <p>Vous n’êtes rattaché à aucune classe pour le moment. Contactez l’administration.</p>
+</section>
+{% else %}
+<section class="carte" aria-labelledby="titre-travaux">
+  <h2 id="titre-travaux">Travail à faire</h2>
+  {% if travaux %}
+  <div class="grille">
+    {% for s in travaux %}
+    <article class="devoir">
+      <div><strong>{{ s.affectation.matiere }}</strong>
+        {% if s.pour_le %}<span class="pastille">Pour le {{ s.pour_le|date:"j F" }}</span>{% endif %}</div>
+      <div>{{ s.travail_a_faire }}</div>
+      <div class="discret">Séance du {{ s.date|date:"j F" }}</div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="discret">Aucun travail à faire pour le moment.</p>
+  {% endif %}
+</section>
+
+<div class="grille">
+  <section class="carte" aria-labelledby="titre-seances">
+    <h2 id="titre-seances">Dernières séances</h2>
+    {% if seances %}
+    <ul class="liste">
+      {% for s in seances %}
+      <li><strong>{{ s.titre }}</strong><div class="discret">{{ s.affectation.matiere }} · {{ s.date|date:"j F" }}</div></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="discret">Aucune séance enregistrée.</p>{% endif %}
+  </section>
+
+  <section class="carte" aria-labelledby="titre-plans">
+    <h2 id="titre-plans">Plans de cours récents</h2>
+    {% if plans %}
+    <ul class="liste">
+      {% for p in plans %}
+      <li><strong>{{ p.titre }}</strong><div class="discret">{{ p.affectation.matiere }}</div></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="discret">Aucun plan de cours publié.</p>{% endif %}
+  </section>
+</div>
+{% endif %}
+{% endblock %}
