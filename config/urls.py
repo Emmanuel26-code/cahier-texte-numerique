@@ -8,6 +8,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("comptes/", include("apps.comptes.urls")),
     path("documents/", include("apps.documents.urls")),
+    path("plans/", include("apps.plans.urls")),
     path("", TemplateView.as_view(template_name="accueil.html"), name="accueil"),
 ]
 if settings.DEBUG:
