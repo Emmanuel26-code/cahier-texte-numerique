@@ -1,0 +1,34 @@
+{% extends "tableau_de_bord/base.html" %}
+{% block titre %}Notifications{% endblock %}
+{% block contenu %}
+<div>
+  <h1>Notifications</h1>
+  <p class="discret"><a href="{% url 'tableau_de_bord:eleve' %}">← Retour au tableau de bord</a></p>
+</div>
+<section class="carte" aria-labelledby="titre-notifs">
+  <h2 id="titre-notifs">{% if nb_non_lues %}{{ nb_non_lues }} non lue{{ nb_non_lues|pluralize }}{% else %}Tout est lu{% endif %}</h2>
+  {% if nb_non_lues %}
+  <form method="post" action="{% url 'notifications:tout_lire' %}">{% csrf_token %}
+    <button type="submit">Tout marquer comme lu</button>
+  </form>
+  {% endif %}
+  {% if notifications %}
+  <ul class="liste">
+    {% for n in notifications %}
+    <li>
+      <span class="pastille">{{ n.get_type_display }}</span>
+      {% if not n.lue %}<strong>{{ n.message }}</strong> <span class="discret">(non lue)</span>{% else %}{{ n.message }}{% endif %}
+      <div class="discret">{{ n.creee_le|date:"j F, H:i" }}</div>
+      {% if not n.lue %}
+      <form method="post" action="{% url 'notifications:marquer_lue' n.pk %}">{% csrf_token %}
+        <button type="submit">Marquer comme lue</button>
+      </form>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="discret">Aucune notification pour le moment.</p>
+  {% endif %}
+</section>
+{% endblock %}
