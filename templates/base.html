@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!doctype html>
 <html lang="fr">
 <head>
@@ -37,3 +38,16 @@
   {% block contenu %}{% endblock %}
 </body>
 </html>
+=======
+{% load static %}
+📘 Cahier de texte ☰
+Accueil {% if user.is_authenticated %} {% url 'seance_liste' as u_seances %}{% if u_seances %}Séances{% endif %} {% if user.role == 'administrateur' %}Administration{% endif %} {{ user.get_role_display }} {% url 'logout' as u_out %}{% if u_out %}
+{% csrf_token %}Déconnexion
+{% endif %} {% else %} {% url 'login' as u_in %}Connexion {% endif %}
+{% if messages %}
+{% for m in messages %}
+{{ m }}
+{% endfor %}
+{% endif %} {% block content %}{% endblock %}
+© Cahier de texte numérique
+>>>>>>> a0a9621 (interfaceprojet)
