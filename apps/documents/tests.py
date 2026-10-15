@@ -1,9 +1,11 @@
+import datetime
 import shutil
 import tempfile
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 
+from apps.academique.models import Affectation, AnneeScolaire, Classe, Matiere
 from apps.comptes.models import Utilisateur
 
 from .models import Document
@@ -20,13 +22,27 @@ class ImportDocumentTests(TestCase):
         shutil.rmtree(DOSSIER_TEST, ignore_errors=True)
 
     def setUp(self):
-        Utilisateur.objects.create_user("prof1", "p1@example.com", "MotDePasse-Solide-2026", role="professeur")
+        self.prof = Utilisateur.objects.create_user("prof1", "p1@example.com", "MotDePasse-Solide-2026", role="professeur")
+        annee = AnneeScolaire.objects.create(
+            libelle="2026-2027",
+            date_debut=datetime.date(2026, 9, 1),
+            date_fin=datetime.date(2027, 6, 30),
+        )
+        classe = Classe.objects.create(nom="Terminale D", annee=annee)
+        matiere = Matiere.objects.create(nom="Physique")
+        self.aff = Affectation.objects.create(
+            professeur=self.prof, classe=classe, matiere=matiere
+        )
         self.client.login(username="prof1", password="MotDePasse-Solide-2026")
 
-    def envoyer(self, nom, contenu):
+    def envoyer(self, nom, contenu, affectation=None):
         return self.client.post(
             "/documents/importer/",
-            {"fichier": SimpleUploadedFile(nom, contenu), "chapitre": "Chapitre 1"},
+            {
+                "fichier": SimpleUploadedFile(nom, contenu),
+                "chapitre": "Chapitre 1",
+                "affectation": (affectation or self.aff).pk,
+            },
         )
 
     def test_import_txt_accepte(self):
@@ -59,3 +75,9 @@ class ImportDocumentTests(TestCase):
         reponse = self.client.get("/documents/importer/")
         self.assertEqual(reponse.status_code, 302)
         self.assertIn("/comptes/connexion/", reponse["Location"])
+    
+    def test_affectation_d_un_autre_professeur_refusee(self):
+        autre = Utilisateur.objects.create_user("prof2", "p2@example.com", "MotDePasse-Solide-2026", role="professeur")
+        aff_autre = Affectation.objects.create(professeur=autre, classe=self.aff.classe, matiere=self.aff.matiere)
+        self.envoyer("cours.pdf", b"%PDF-1.4 contenu", affectation=aff_autre)
+        self.assertEqual(Document.objects.count(), 0)
