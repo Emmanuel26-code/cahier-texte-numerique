@@ -149,6 +149,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 Mo
+
 # Sécurité HTTPS (actif seulement en production, quand DJANGO_DEBUG=False)
 if not DEBUG:
     SECURE_SSL_REDIRECT = True  # redirige tout http:// vers https://

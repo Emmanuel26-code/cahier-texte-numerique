@@ -125,3 +125,35 @@ class ImportDocumentTests(TestCase):
     def test_nettoyer_nom_supprime_les_chemins(self):
         self.assertEqual(nettoyer_nom("../../etc/passwd.txt"), "passwd.txt")
         self.assertEqual(nettoyer_nom("C:\\Users\\Moi\\cours final.pdf"), "cours_final.pdf")
+    
+    # --- Rattachement à une affectation ------------------------------------------
+    def test_affectation_obligatoire(self):
+        reponse = self.client.post(
+            "/documents/importer/",
+            {"fichier": SimpleUploadedFile("cours.txt", b"contenu"), "chapitre": "Chapitre 1"},
+        )
+        self.assertEqual(reponse.status_code, 200)
+        self.assertEqual(Document.objects.count(), 0)
+
+    def test_affectation_d_un_autre_professeur_refusee(self):
+        autre = creer_affectation("prof2")
+        reponse = self.envoyer("cours.txt", b"contenu", affectation=autre)
+        self.assertEqual(reponse.status_code, 200)
+        self.assertEqual(Document.objects.count(), 0)
+
+    def test_document_rattache_a_l_affectation_choisie(self):
+        self.envoyer("cours.txt", b"contenu")
+        self.assertEqual(Document.objects.get().affectation, self.affectation)
+
+    def test_la_liste_ne_montre_que_les_documents_du_professeur(self):
+        autre = creer_affectation("prof2")
+        mien = Document.objects.create(
+            affectation=self.affectation, nom_original="a.txt", fichier="documents/a.txt",
+            type_mime="text/plain", taille_octets=1,
+        )
+        Document.objects.create(
+            affectation=autre, nom_original="b.txt", fichier="documents/b.txt",
+            type_mime="text/plain", taille_octets=1,
+        )
+        reponse = self.client.get("/documents/")
+        self.assertEqual(list(reponse.context["documents"]), [mien])
