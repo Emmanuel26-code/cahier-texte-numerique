@@ -9,7 +9,7 @@ from unittest.mock import patch
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 
-from apps.comptes.models import Utilisateur
+from apps.plans.tests import creer_affectation
 
 from .models import Document, nettoyer_nom
 from .validators import TAILLE_MAX_OCTETS
@@ -39,13 +39,18 @@ class ImportDocumentTests(TestCase):
         shutil.rmtree(DOSSIER_TEST, ignore_errors=True)
 
     def setUp(self):
-        Utilisateur.objects.create_user("prof1", "p1@example.com", "MotDePasse-Solide-2026", role="professeur")
-        self.client.login(username="prof1", password="MotDePasse-Solide-2026")
+        self.affectation = creer_affectation("prof1")
+        self.client.force_login(self.affectation.professeur)
 
-    def envoyer(self, nom, contenu):
+    def envoyer(self, nom, contenu, affectation=None):
+        affectation = affectation or self.affectation
         return self.client.post(
             "/documents/importer/",
-            {"fichier": SimpleUploadedFile(nom, contenu), "chapitre": "Chapitre 1"},
+            {
+                "affectation": affectation.pk,
+                "fichier": SimpleUploadedFile(nom, contenu),
+                "chapitre": "Chapitre 1",
+            },
         )
 
     # --- Tâche 36 : format et taille ---------------------------------------

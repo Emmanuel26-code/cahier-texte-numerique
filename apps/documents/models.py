@@ -29,6 +29,12 @@ def nettoyer_nom(nom):
 class Document(models.Model):
     """Fichier de cours importé par un professeur (voir MCD : entité DOCUMENT)."""
 
+    affectation = models.ForeignKey(
+        "academique.Affectation",
+        on_delete=models.PROTECT,
+        related_name="documents",
+    )
+
     fichier = models.FileField(
         "fichier",
         upload_to=chemin_upload,
