@@ -1,0 +1,53 @@
+:root {
+  --couleur-principale: #1F4E79;
+  --couleur-secondaire: #2E8B57;
+  --fond: #F5F7FA;
+  --texte: #222222;
+  --erreur: #B00020;
+}
+
+body {
+  background-color: var(--fond);
+  color: var(--texte);
+  font-family: "Segoe UI", sans-serif;
+}
+
+nav {
+  background-color: var(--couleur-principale);
+  padding: 0.8rem 1.2rem;
+  border-radius: 0.5rem;
+}
+
+nav a {
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+button {
+  background-color: var(--couleur-secondaire);
+  color: #ffffff;
+  border: none;
+  border-radius: 0.4rem;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+input, select {
+  border: 1px solid #ced4da;
+  border-radius: 0.4rem;
+}
+
+.errorlist {
+  color: var(--erreur);
+}
+
+h1, h2 {
+  color: var(--couleur-principale);
+}
