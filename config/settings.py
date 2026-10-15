@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     "apps.cahier",
     "apps.documents",
     "apps.plans",
+    "apps.notifications",
+    "apps.tableau_de_bord",
 ]
 
 AUTH_USER_MODEL = "comptes.Utilisateur"
