@@ -9,7 +9,7 @@ from unittest.mock import patch
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 
-from apps.comptes.models import Utilisateur
+from apps.plans.tests import creer_affectation
 
 from .models import Document, nettoyer_nom
 from .validators import TAILLE_MAX_OCTETS
@@ -39,13 +39,18 @@ class ImportDocumentTests(TestCase):
         shutil.rmtree(DOSSIER_TEST, ignore_errors=True)
 
     def setUp(self):
-        Utilisateur.objects.create_user("prof1", "p1@example.com", "MotDePasse-Solide-2026", role="professeur")
-        self.client.login(username="prof1", password="MotDePasse-Solide-2026")
+        self.affectation = creer_affectation("prof1")
+        self.client.force_login(self.affectation.professeur)
 
-    def envoyer(self, nom, contenu):
+    def envoyer(self, nom, contenu, affectation=None):
+        affectation = affectation or self.affectation
         return self.client.post(
             "/documents/importer/",
-            {"fichier": SimpleUploadedFile(nom, contenu), "chapitre": "Chapitre 1"},
+            {
+                "affectation": affectation.pk,
+                "fichier": SimpleUploadedFile(nom, contenu),
+                "chapitre": "Chapitre 1",
+            },
         )
 
     # --- Tâche 36 : format et taille ---------------------------------------
@@ -120,3 +125,35 @@ class ImportDocumentTests(TestCase):
     def test_nettoyer_nom_supprime_les_chemins(self):
         self.assertEqual(nettoyer_nom("../../etc/passwd.txt"), "passwd.txt")
         self.assertEqual(nettoyer_nom("C:\\Users\\Moi\\cours final.pdf"), "cours_final.pdf")
+    
+    # --- Rattachement à une affectation ------------------------------------------
+    def test_affectation_obligatoire(self):
+        reponse = self.client.post(
+            "/documents/importer/",
+            {"fichier": SimpleUploadedFile("cours.txt", b"contenu"), "chapitre": "Chapitre 1"},
+        )
+        self.assertEqual(reponse.status_code, 200)
+        self.assertEqual(Document.objects.count(), 0)
+
+    def test_affectation_d_un_autre_professeur_refusee(self):
+        autre = creer_affectation("prof2")
+        reponse = self.envoyer("cours.txt", b"contenu", affectation=autre)
+        self.assertEqual(reponse.status_code, 200)
+        self.assertEqual(Document.objects.count(), 0)
+
+    def test_document_rattache_a_l_affectation_choisie(self):
+        self.envoyer("cours.txt", b"contenu")
+        self.assertEqual(Document.objects.get().affectation, self.affectation)
+
+    def test_la_liste_ne_montre_que_les_documents_du_professeur(self):
+        autre = creer_affectation("prof2")
+        mien = Document.objects.create(
+            affectation=self.affectation, nom_original="a.txt", fichier="documents/a.txt",
+            type_mime="text/plain", taille_octets=1,
+        )
+        Document.objects.create(
+            affectation=autre, nom_original="b.txt", fichier="documents/b.txt",
+            type_mime="text/plain", taille_octets=1,
+        )
+        reponse = self.client.get("/documents/")
+        self.assertEqual(list(reponse.context["documents"]), [mien])
