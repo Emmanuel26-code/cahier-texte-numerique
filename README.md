@@ -1,7 +1,7 @@
 # Cahier de texte numérique
 
 Application web de gestion du cahier de texte d'un établissement scolaire.
-Les professeurs enregistrent leurs séances, importent leurs cours (DOCX, PDF, TXT),
+Les professeurs enregistrent leurs séances, importent leurs cours (DOCX, PDF, TXT,PPTX, XLSX),
 et une intelligence artificielle propose automatiquement un plan de cours
 (titres et sous-titres) que le professeur peut modifier et valider.
 
