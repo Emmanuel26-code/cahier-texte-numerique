@@ -11,7 +11,9 @@ Remarque : un `bulk_create` de séances ne déclenche pas ces signaux.
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
-from apps.academique.models import Affectation, Plan, Seance
+from apps.academique.models import Affectation
+from apps.cahier.models import Seance
+from apps.plans.models import Plan
 
 from .models import Notification
 from .services import extrait, notifier_eleves_de_la_classe
