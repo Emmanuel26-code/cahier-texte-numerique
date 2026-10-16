@@ -4,7 +4,9 @@ from datetime import date
 from django.test import TestCase
 from django.urls import reverse
 
-from apps.academique.models import Affectation, Classe, Matiere, Plan, Seance
+from apps.academique.models import Affectation, Classe, Matiere
+from apps.cahier.models import Seance
+from apps.plans.models import Plan
 from apps.comptes.models import Utilisateur
 
 Role = Utilisateur.Role

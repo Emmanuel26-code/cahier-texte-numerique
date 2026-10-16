@@ -3,7 +3,9 @@
 Toute la lecture en base est isolée ici : si les noms de modèles ou de champs
 de votre dépôt diffèrent, c'est le SEUL fichier à adapter.
 """
-from apps.academique.models import Plan, Seance
+from apps.cahier.models import Seance
+from apps.plans.models import Plan
+from apps.plans.models import Plan
 from apps.notifications.services import compter_non_lues
 
 NB_ELEMENTS = 5
