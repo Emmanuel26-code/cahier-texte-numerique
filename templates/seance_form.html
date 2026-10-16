@@ -1,0 +1,20 @@
+{% extends "base.html" %} {% block title %}{% if object %}Modifier la séance{% else %}Nouvelle séance{% endif %}{% endblock %} {% block content %}
+{% if object %}Modifier la séance{% else %}Nouvelle séance{% endif %}
+Les champs marqués d'un * sont obligatoires.
+
+{% csrf_token %} {% if form.non_field_errors %}
+{% for e in form.non_field_errors %}
+{{ e }}
+{% endfor %}
+{% endif %}
+{{ form.affectation.label_tag }}{{ form.affectation }}{{ form.affectation.errors }}
+{{ form.date_seance.label_tag }}{{ form.date_seance }}{{ form.date_seance.errors }}
+{{ form.duree_minutes.label_tag }}{{ form.duree_minutes }}En minutes{{ form.duree_minutes.errors }}
+{{ form.titre.label_tag }}{{ form.titre }}{{ form.titre.errors }}
+{{ form.contenu_traite.label_tag }}{{ form.contenu_traite }}{{ form.contenu_traite.errors }}
+{{ form.travail_a_faire.label_tag }}{{ form.travail_a_faire }}{{ form.travail_a_faire.errors }}
+{{ form.points_du_plan.label_tag }}{{ form.points_du_plan }}Points du plan couverts (Ctrl/Cmd + clic pour en choisir plusieurs)
+Enregistrer
+{% url 'seance_liste' as u_l %}
+Annuler
+{% endblock %}
