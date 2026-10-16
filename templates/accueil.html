@@ -1,10 +1,32 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block content %} {% if user.is_authenticated %}
+Bonjour {{ user.first_name|default:user.username }} 👋
+Connecté en tant que {{ user.get_role_display|lower }}.
 
-{% block contenu %}
-  <h1>Cahier de texte numérique</h1>
-  {% if user.is_authenticated %}
-    <p>Bienvenue {{ user.first_name|default:user.username }} !</p>
-  {% else %}
-    <p>Connectez-vous ou créez un compte pour accéder au cahier de texte.</p>
-  {% endif %}
-{% endblock %}
+{% url 'seance_liste' as u_liste %}{% url 'seance_creer' as u_new %}
+{% if user.role == 'professeur' %}
+✍️
+Nouvelle séance
+Renseigner le contenu traité et le travail à faire.
+
+{% endif %}
+📚
+{% if user.role == 'eleve' %}Mon cahier{% else %}Séances{% endif %}
+Consulter le cahier de texte par date, matière ou classe.
+
+{% if user.role == 'administrateur' %}
+⚙️
+Administration
+Années, classes, matières, affectations, utilisateurs.
+
+{% endif %}
+{{ nb_seances|default:"–" }}
+séances enregistrées
+
+{% else %}
+📘 Cahier de texte numérique
+Suivez le contenu des cours, le travail à faire et l'avancement du programme.
+
+{% url 'login' as u_in %}Se connecter
+{% endif %}
+ {% endblock %}
+>>>>>>> a0a9621 (interfaceprojet)

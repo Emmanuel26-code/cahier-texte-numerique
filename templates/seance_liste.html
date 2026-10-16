@@ -1,0 +1,20 @@
+{% extends "base.html" %} {% block title %}Séances{% endblock %} {% block content %}
+Cahier de texte
+{{ seances|length }} séance{{ seances|length|pluralize }}
+
+🔍 Rechercher…
+{% if user.role == 'professeur' %}{% url 'seance_creer' as u_new %}
++ Nouvelle séance
+{% endif %}
+{% if seances %} {% for s in seances %} {% endfor %}
+Date	Matière	Classe	Titre / contenu	Travail à faire	Durée	
+{{ s.date_seance|date:"d/m/Y" }}	{{ s.affectation.matiere }}	{{ s.affectation.classe.nom }}	{{ s.titre }}
+{{ s.contenu_traite|truncatewords:25 }}	{{ s.travail_a_faire|default:"—"|truncatewords:15 }}	{{ s.duree_minutes }} min	{% if user.role == 'professeur' and s.affectation.professeur == user %}
+{% url 'seance_modifier' s.pk as u_edit %}Modifier {% url 'seance_supprimer' s.pk as u_del %}
+{% csrf_token %}Supprimer
+{% endif %}
+{% else %}
+📭
+Aucune séance pour le moment.
+{% endif %}
+{% endblock %}

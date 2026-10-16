@@ -1,0 +1,13 @@
+{% extends "base.html" %} {% block title %}Connexion{% endblock %} {% block content %}
+Connexion
+Accédez à votre cahier de texte
+
+{% csrf_token %} {% if form.non_field_errors %}
+{% for e in form.non_field_errors %}
+{{ e }}
+{% endfor %}
+{% endif %}
+Nom d'utilisateur{{ form.username }}
+Mot de passe{{ form.password }}
+Se connecter
+{% endblock %}
