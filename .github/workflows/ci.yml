@@ -1,0 +1,81 @@
+# Intégration continue : à chaque push et à chaque pull request, on vérifie que
+# l'application démarre, que les migrations sont à jour et que tous les tests passent,
+# sur MySQL (base de développement) ET sur PostgreSQL (base de production sur Vercel).
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Tests (${{ matrix.base }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - base: mysql
+            database_url: mysql://root:ci-mot-de-passe@127.0.0.1:3306/cahier_texte
+          - base: postgres
+            database_url: postgres://postgres:ci-mot-de-passe@127.0.0.1:5432/cahier_texte
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: ci-mot-de-passe
+          MYSQL_DATABASE: cahier_texte
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pci-mot-de-passe"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci-mot-de-passe
+          POSTGRES_DB: cahier_texte
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+
+    env:
+      DATABASE_URL: ${{ matrix.database_url }}
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: cle-uniquement-pour-la-ci-ce-n-est-pas-un-secret-0123456789-abcdef
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          cache: pip
+
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
+
+      - name: Vérifier la configuration Django
+        run: python manage.py check --fail-level WARNING
+
+      - name: Vérifier la configuration de production
+        run: python manage.py check --deploy --fail-level WARNING
+        env:
+          DJANGO_ALLOWED_HOSTS: cahier-texte.vercel.app
+
+      - name: Vérifier qu'aucune migration ne manque
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Lancer les tests
+        run: python manage.py test --noinput --verbosity 1
+        env:
+          DJANGO_SECURE_SSL_REDIRECT: "False"  # le client de test parle en http
