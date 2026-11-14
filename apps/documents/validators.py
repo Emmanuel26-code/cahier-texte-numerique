@@ -1,11 +1,12 @@
 import os
 import zipfile
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
+from django.template.defaultfilters import filesizeformat
 
 EXTENSIONS_AUTORISEES = ["docx", "pdf", "txt", "pptx", "xlsx"]
-TAILLE_MAX_OCTETS = 10 * 1024 * 1024  # 10 Mo
 
 MAX_DECOMPRESSE_OCTETS = 100 * 1024 * 1024  
 MAX_ENTREES_ZIP = 2000
@@ -17,9 +18,12 @@ valider_extension = FileExtensionValidator(
 
 
 def valider_taille(fichier):
-    """Refuse les fichiers de plus de 10 Mo."""
-    if fichier.size > TAILLE_MAX_OCTETS:
-        raise ValidationError("Fichier trop volumineux. Taille maximale : 10 Mo.")
+    """Refuse les fichiers plus gros que settings.DOCUMENT_MAX_OCTETS (10 Mo par défaut)."""
+    maximum = settings.DOCUMENT_MAX_OCTETS
+    if fichier.size > maximum:
+        raise ValidationError(
+            f"Fichier trop volumineux. Taille maximale : {filesizeformat(maximum)}."
+        )
 
 
 def _verifier_docx(fichier):

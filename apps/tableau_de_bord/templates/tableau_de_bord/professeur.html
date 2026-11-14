@@ -1,0 +1,66 @@
+{% extends "tableau_de_bord/base.html" %}
+{% block titre %}Tableau de bord – Professeur{% endblock %}
+{% block entete %}
+  <h1>Bonjour, {{ request.user.first_name|default:request.user.username }}</h1>
+  <p class="discret">{{ affectations|length }} classe{{ affectations|length|pluralize }} · {{ nb_seances_mois }} séance{{ nb_seances_mois|pluralize }} ce mois-ci</p>
+{% endblock %}
+{% block cloche %}
+  <a class="button" href="{% url 'cahier:creer' %}">＋ Nouvelle séance</a>
+  <a class="button secondary" href="{% url 'documents:importer' %}">↑ Importer un cours</a>
+{% endblock %}
+{% block tableau %}
+{% if plans_a_valider %}
+<section class="carte alerte" aria-labelledby="titre-plans">
+  <h2 id="titre-plans">Plans de cours à valider ({{ plans_a_valider|length }})</h2>
+  <ul class="liste">
+    {% for p in plans_a_valider %}
+    <li><a href="{% url 'plans:detail' p.pk %}"><strong>{{ p.titre }}</strong></a>
+      <div class="discret">{{ p.document.affectation.classe.nom }} · {{ p.document.affectation.matiere.nom }} · proposé le {{ p.date_generation|date:"j F" }}</div></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="carte" aria-labelledby="titre-classes">
+  <h2 id="titre-classes">Mes classes</h2>
+  {% if affectations %}
+  <div class="grille">
+    {% for a in affectations %}
+    <article class="devoir">
+      <strong>{{ a.classe.nom }}</strong> <span class="discret">{{ a.classe.annee.libelle }}</span>
+      <div>{{ a.matiere.nom }}</div>
+      <div class="discret">{{ a.nb_seances }} séance{{ a.nb_seances|pluralize }}</div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="discret">Aucune classe ne vous est encore attribuée. Contactez l’administration.</p>
+  {% endif %}
+</section>
+
+<div class="grille">
+  <section class="carte" aria-labelledby="titre-seances">
+    <h2 id="titre-seances">Dernières séances</h2>
+    {% if seances_recentes %}
+    <ul class="liste">
+      {% for s in seances_recentes %}
+      <li><a href="{% url 'cahier:detail' s.pk %}"><strong>{{ s.titre }}</strong></a>
+        <div class="discret">{{ s.affectation.classe.nom }} · {{ s.affectation.matiere.nom }} · {{ s.date_seance|date:"j F" }}</div></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="discret">Aucune séance enregistrée.</p>{% endif %}
+  </section>
+
+  <section class="carte" aria-labelledby="titre-documents">
+    <h2 id="titre-documents">Documents récents</h2>
+    {% if documents_recents %}
+    <ul class="liste">
+      {% for d in documents_recents %}
+      <li><a href="{% url 'documents:liste' %}?document={{ d.pk }}"><strong>{{ d.nom_original }}</strong></a>
+        <div class="discret">{{ d.affectation.classe.nom }} · {{ d.chapitre|default:"Sans chapitre" }}</div></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="discret">Aucun document importé.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

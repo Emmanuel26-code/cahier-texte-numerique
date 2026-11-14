@@ -130,3 +130,30 @@ class AccesParRoleTests(TestCase):
         reponse = self.client.post(reverse(URL_CONNEXION), {
             "username": self.comptes[Role.ELEVE].username, "password": MOT_DE_PASSE})
         self.assertRedirects(reponse, reverse("tableau_de_bord:accueil"), fetch_redirect_response=False)
+
+
+class TableauxDeBordProfesseurAdministrateurTests(TestCase):
+    """Tâches 47 et 48 : les vrais tableaux de bord remplacent les pages « en construction »."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.prof = creer(Role.PROFESSEUR, "prof_tdb")
+        cls.admin = creer(Role.ADMINISTRATEUR, "admin_tdb")
+
+    def test_professeur_sans_classe(self):
+        self.client.force_login(self.prof)
+        reponse = self.client.get(reverse("tableau_de_bord:professeur"))
+        self.assertContains(reponse, "Aucune classe ne vous est encore attribuée")
+        self.assertContains(reponse, reverse("cahier:creer"))
+
+    def test_administrateur_voit_les_chiffres_cles(self):
+        creer(Role.ELEVE, "eleve_orphelin")
+        self.client.force_login(self.admin)
+        reponse = self.client.get(reverse("tableau_de_bord:administrateur"))
+        self.assertEqual(reponse.context["nb_eleves"], 1)
+        self.assertEqual(reponse.context["nb_professeurs"], 1)
+        self.assertContains(reponse, "1 élève sans classe")
+
+    def test_accueil_redirige_un_utilisateur_connecte(self):
+        self.client.force_login(self.prof)
+        self.assertRedirects(self.client.get("/"), reverse("tableau_de_bord:accueil"), fetch_redirect_response=False)

@@ -52,7 +52,7 @@
         <div class="detail-item"><span>Chapitre</span><strong>{{ selection.chapitre|default:"Non renseigné" }}</strong></div>
       </div>
       <div class="form-actions">
-        <a class="button secondary" href="{{ selection.fichier.url }}" download>↓ Télécharger</a>
+        <a class="button secondary" href="{% url 'documents:telecharger' selection.pk %}">↓ Télécharger</a>
         {% if user.est_administrateur or selection.affectation.professeur_id == user.id %}
           <button type="button" class="button" data-generer data-url="{% url 'plans:generer_plan' selection.pk %}">☷ Générer un plan</button>
         {% endif %}
@@ -60,10 +60,10 @@
       <div data-zone-plan aria-live="polite"></div>
       <h3 class="small-text" style="margin:16px 0 6px;font-weight:700">Plans rattachés à ce document ({{ selection.plans.count }})</h3>
       <div class="table-wrap">
-        <table class="data-table"><thead><tr><th>Génération</th><th>Statut</th><th>Validation</th></tr></thead>
+        <table class="data-table"><thead><tr><th>Génération</th><th>Statut</th><th>Validation</th><th></th></tr></thead>
           <tbody>{% for plan in selection.plans.all %}
-            <tr><td>{{ plan.date_generation|date:"d/m/Y" }}</td><td><span class="tag {% if plan.statut == 'valide' %}success{% endif %}">{{ plan.get_statut_display }}</span></td><td>{{ plan.date_validation|date:"d/m/Y"|default:"Non validé" }}</td></tr>
-          {% empty %}<tr><td colspan="3" class="muted">Aucun plan rattaché.</td></tr>{% endfor %}</tbody>
+            <tr><td>{{ plan.date_generation|date:"d/m/Y" }}</td><td><span class="tag {% if plan.statut == 'valide' %}success{% endif %}">{{ plan.get_statut_display }}</span></td><td>{{ plan.date_validation|date:"d/m/Y"|default:"Non validé" }}</td><td><a class="table-link" href="{% url 'plans:detail' plan.pk %}">{% if plan.statut == 'propose' %}Relire et valider{% else %}Consulter{% endif %}</a></td></tr>
+          {% empty %}<tr><td colspan="4" class="muted">Aucun plan rattaché.</td></tr>{% endfor %}</tbody>
         </table>
       </div>
     {% else %}
@@ -84,7 +84,7 @@
         </div>
       {% endfor %}
       {% if form.non_field_errors %}<ul class="errorlist">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
-      <div class="notice">Formats acceptés : PDF, DOCX, PPTX, XLSX et TXT. Taille maximale : 10 Mo.</div>
+      <div class="notice">Formats acceptés : PDF, DOCX, PPTX, XLSX et TXT. Taille maximale : {{ taille_max|filesizeformat }}.</div>
       <div class="form-actions"><button class="button" type="submit">↑ Importer</button><a class="button secondary" href="{% url 'documents:liste' %}">Annuler</a></div>
     </form>
   </section>
@@ -123,6 +123,13 @@
           label.textContent = "Plan proposé par l’IA (à valider) :";
           result.appendChild(label);
           result.appendChild(arbre(data.titres));
+          if (data.url) {
+            var lien = document.createElement("a");
+            lien.className = "button";
+            lien.href = data.url;
+            lien.textContent = "Relire, corriger et valider ce plan →";
+            result.appendChild(lien);
+          }
           zone.appendChild(result);
         });
       })

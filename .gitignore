@@ -8,3 +8,6 @@ media/
 staticfiles/
 .idea/
 .vscode/
+
+# Vercel
+.vercel/

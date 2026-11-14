@@ -1,0 +1,46 @@
+# Déploiement continu : quand main change, on applique les migrations sur la base de
+# production. Vercel, relié au dépôt GitHub, publie lui-même le nouveau code.
+#
+# Secret à créer dans GitHub (Settings > Secrets and variables > Actions) :
+#   PRODUCTION_DATABASE_URL  = l'adresse de la base de production (la même que sur Vercel)
+name: Déploiement
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploiement-production
+  cancel-in-progress: false
+
+jobs:
+  migrations:
+    name: Migrations de la base de production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: inutile-pour-les-migrations
+    steps:
+      - name: Vérifier que le secret est configuré
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Le secret PRODUCTION_DATABASE_URL n'est pas défini (voir README, section Déploiement)."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          cache: pip
+
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
+
+      - name: Appliquer les migrations
+        run: python manage.py migrate --noinput
