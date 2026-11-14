@@ -1,5 +1,10 @@
+import os
+
+from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
@@ -24,7 +29,7 @@ def importer(request):
             return redirect("documents:liste")
     else:
         form = DocumentForm(professeur=professeur)
-    return render(request, "documents/importer.html", {"form": form})
+    return render(request, "documents/importer.html", {"form": form, "taille_max": settings.DOCUMENT_MAX_OCTETS})
 
 
 @role_requis(Role.PROFESSEUR, Role.ADMINISTRATEUR)
@@ -78,6 +83,7 @@ def liste(request):
             "documents": documents,
             "selection": selected,
             "form": form,
+            "taille_max": settings.DOCUMENT_MAX_OCTETS,
             "q": query,
             "affectation_filtre": affectation_id,
             "chapitre_filtre": chapitre,
@@ -87,4 +93,43 @@ def liste(request):
                 professeur=request.user
             ).select_related("classe", "matiere"),
         },
+    )
+
+def peut_consulter(utilisateur, document):
+    """Qui peut télécharger un document ?
+
+    - l'administrateur ;
+    - le professeur de l'affectation ;
+    - les élèves inscrits dans la classe de l'affectation.
+    """
+    if utilisateur.est_administrateur:
+        return True
+    if utilisateur.est_professeur:
+        return document.affectation.professeur_id == utilisateur.id
+    if utilisateur.est_eleve:
+        return utilisateur.classes_suivies.filter(pk=document.affectation.classe_id).exists()
+    return False
+
+
+@login_required
+def telecharger(request, document_id):
+    """Envoie le fichier après contrôle des droits.
+
+    Les fichiers ne sont jamais servis par une adresse publique /media/… :
+    sans ce contrôle, toute personne ayant le lien pourrait lire un cours.
+    """
+    document = get_object_or_404(Document.objects.select_related("affectation"), pk=document_id)
+    if not peut_consulter(request.user, document):
+        # 404 (et non 403) : on ne révèle pas l'existence des documents des autres.
+        raise Http404("Document introuvable.")
+    try:
+        fichier = document.fichier.open("rb")
+    except (FileNotFoundError, OSError):
+        raise Http404("Le fichier de ce document est introuvable.")
+    extension = os.path.splitext(document.nom_original)[1]
+    return FileResponse(
+        fichier,
+        as_attachment=True,
+        filename=document.nom_original or f"document-{document.pk}{extension}",
+        content_type=document.type_mime or "application/octet-stream",
     )

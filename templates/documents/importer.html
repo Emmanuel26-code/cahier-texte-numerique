@@ -4,7 +4,7 @@
 
 {% block contenu %}
   <h1>Importer un document de cours</h1>
-  <p class="aide">Formats acceptés : DOCX, PDF, PPTX, XLSX. Taille maximale : 10 Mo.</p>
+  <p class="aide">Formats acceptés : PDF, DOCX, PPTX, XLSX et TXT. Taille maximale : {{ taille_max|filesizeformat }}.</p>
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {{ form.as_p }}
