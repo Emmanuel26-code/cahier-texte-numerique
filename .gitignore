@@ -11,3 +11,7 @@ staticfiles/
 
 # Vercel
 .vercel/
+
+# Secrets de production (Neon) : jamais commités
+.env.production
+.neon

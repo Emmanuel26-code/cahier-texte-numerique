@@ -84,25 +84,34 @@ Vercel exécute Django en fonctions serverless. Deux conséquences :
 
 | Besoin | Service conseillé | Variable(s) à récupérer |
 |---|---|---|
-| Base de données | **Neon** (PostgreSQL), à ajouter depuis Vercel > Storage | `DATABASE_URL` |
-| Fichiers importés | **Cloudflare R2** (compatible S3, 10 Go gratuits) | `S3_BUCKET`, `S3_ENDPOINT_URL`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` |
+| Base de données | **Neon** PostgreSQL | `DATABASE_URL` |
+| Fichiers importés | **Neon Object Storage** (bucket privé `documents`) | `S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3`, `AWS_REGION` |
 | IA | Google AI Studio | `GEMINI_API_KEY` |
+
+> **Déjà fait pour ce projet :** projet Neon `cahier-texte-numerique` (`misty-sound-15687979`,
+> région Francfort `aws-eu-central-1`), base `cahier_texte` migrée, bucket privé `documents`.
+> Toutes les variables de production sont dans le fichier local **`.env.production`**
+> (jamais commité). Pour le régénérer :
+> `neon env pull --project-id misty-sound-15687979 --file .env.production -s postgres -s object-storage`
+> puis y ajouter `DJANGO_DEBUG`, `DJANGO_SECRET_KEY`, `S3_BUCKET=documents`, `DOCUMENT_MAX_OCTETS` et `IA_TIMEOUT_SECONDS`.
+>
+> Un autre stockage compatible S3 (Cloudflare R2, AWS S3…) fonctionne aussi avec les variables
+> `S3_ENDPOINT_URL`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_REGION`.
 
 ### 2. Créer le projet Vercel
 
 1. Sur https://vercel.com : **Add New > Project**, importer le dépôt GitHub.
 2. Framework : **Other**. Laisser les commandes de build vides.
-3. Dans **Settings > Environment Variables**, ajouter :
+3. Dans **Settings > Environment Variables** (environnement *Production*), importer le contenu
+   de `.env.production` (bouton *Import .env*), puis ajouter `GEMINI_API_KEY`. On y trouve :
 
-   | Variable | Valeur |
+   | Variable | Rôle |
    |---|---|
-   | `DJANGO_SECRET_KEY` | résultat de `python -c "import secrets; print(secrets.token_urlsafe(50))"` |
-   | `DJANGO_DEBUG` | `False` |
-   | `DATABASE_URL` | adresse Neon (`postgres://…?sslmode=require`) |
-   | `S3_BUCKET`, `S3_ENDPOINT_URL`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_REGION` | valeurs Cloudflare R2 (`S3_REGION=auto`) |
-   | `DOCUMENT_MAX_OCTETS` | `4194304` (Vercel refuse les envois de plus de 4,5 Mo) |
-   | `GEMINI_API_KEY` | votre clé |
-   | `IA_TIMEOUT_SECONDS` | `50` (une fonction Vercel est coupée au bout de 60 s) |
+   | `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=False` | sécurité Django |
+   | `DATABASE_URL` | base Neon, via le pooler de connexions |
+   | `S3_BUCKET` + `AWS_*` | stockage Neon des documents |
+   | `DOCUMENT_MAX_OCTETS=4194304` | Vercel refuse les envois de plus de 4,5 Mo |
+   | `IA_TIMEOUT_SECONDS=50` | une fonction Vercel est coupée au bout de 60 s |
 
    Le domaine `*.vercel.app` est autorisé automatiquement. Pour un domaine personnalisé,
    ajouter aussi `DJANGO_ALLOWED_HOSTS` et `DJANGO_CSRF_TRUSTED_ORIGINS`.
@@ -110,15 +119,16 @@ Vercel exécute Django en fonctions serverless. Deux conséquences :
 
 ### 3. Préparer la base de production (une seule fois)
 
-Depuis votre poste, avec l'adresse de la base de production :
+Les migrations sont déjà appliquées. Pour lancer une commande sur la base de production,
+indiquer le fichier `.env.production` avec `DJANGO_ENV_FILE` (PowerShell) :
 
-```bash
-DATABASE_URL="postgres://…" DJANGO_DEBUG=False DJANGO_SECRET_KEY=x python manage.py migrate
-DATABASE_URL="postgres://…" DJANGO_DEBUG=False DJANGO_SECRET_KEY=x python manage.py createsuperuser
+```powershell
+$env:DJANGO_ENV_FILE=".env.production"; .venv\Scripts\python.exe manage.py createsuperuser
 ```
 
 Puis, dans GitHub > Settings > Secrets and variables > Actions, créer le secret
-`PRODUCTION_DATABASE_URL` avec la même adresse.
+`PRODUCTION_DATABASE_URL` avec la valeur `DATABASE_URL_UNPOOLED` de `.env.production`
+(connexion directe, recommandée pour les migrations).
 
 ### 4. Ensuite, tout est automatique
 
