@@ -9,10 +9,13 @@ from unittest.mock import patch
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 
+from apps.comptes.models import Utilisateur
 from apps.plans.tests import creer_affectation
 
 from .models import Document, nettoyer_nom
-from .validators import TAILLE_MAX_OCTETS
+from django.conf import settings
+
+TAILLE_MAX_OCTETS = settings.DOCUMENT_MAX_OCTETS
 
 DOSSIER_TEST = tempfile.mkdtemp()  # les fichiers de test vont ici, pas dans media/
 
@@ -61,6 +64,16 @@ class ImportDocumentTests(TestCase):
         self.assertEqual(doc.nom_original, "cours.txt")
         self.assertEqual(doc.type_mime, "text/plain")
         self.assertEqual(doc.taille_octets, len(b"Introduction\nPartie 1"))
+
+    def test_administrateur_peut_importer_sur_une_affectation(self):
+        administrateur = Utilisateur.objects.create_user(
+            "admin-import", "admin-import@example.com", "MotDePasse-Solide-2026",
+            role="administrateur",
+        )
+        self.client.force_login(administrateur)
+        reponse = self.envoyer("cours-admin.txt", b"Support de cours")
+        self.assertRedirects(reponse, "/documents/")
+        self.assertEqual(Document.objects.get().affectation, self.affectation)
 
     def test_import_pdf_et_docx_acceptes(self):
         self.envoyer("cours.pdf", PDF_VALIDE)
@@ -157,3 +170,44 @@ class ImportDocumentTests(TestCase):
         )
         reponse = self.client.get("/documents/")
         self.assertEqual(list(reponse.context["documents"]), [mien])
+
+@override_settings(MEDIA_ROOT=DOSSIER_TEST)
+class TelechargementProtegeTests(TestCase):
+    """Les fichiers ne sont envoyés qu'aux personnes autorisées."""
+
+    def setUp(self):
+        from apps.academique.models import Inscription
+
+        self.affectation = creer_affectation("prof-dl")
+        self.document = Document.objects.create(
+            affectation=self.affectation, chapitre="Ch. 1",
+            fichier=SimpleUploadedFile("cours.pdf", PDF_VALIDE),
+        )
+        self.url = f"/documents/{self.document.pk}/telecharger/"
+        self.eleve = Utilisateur.objects.create_user("eleve-dl", "eleve-dl@example.com", "x" * 12, role="eleve")
+        Inscription.objects.create(eleve=self.eleve, classe=self.affectation.classe)
+
+    def test_professeur_proprietaire_telecharge(self):
+        self.client.force_login(self.affectation.professeur)
+        reponse = self.client.get(self.url)
+        self.assertEqual(reponse.status_code, 200)
+        self.assertEqual(b"".join(reponse.streaming_content), PDF_VALIDE)
+        self.assertIn('attachment; filename="cours.pdf"', reponse["Content-Disposition"])
+
+    def test_eleve_de_la_classe_telecharge(self):
+        self.client.force_login(self.eleve)
+        self.assertEqual(self.client.get(self.url).status_code, 200)
+
+    def test_autres_refuses(self):
+        autre_prof = Utilisateur.objects.create_user("autre-dl", "autre-dl@example.com", "x" * 12, role="professeur")
+        autre_eleve = Utilisateur.objects.create_user("ailleurs-dl", "ailleurs@example.com", "x" * 12, role="eleve")
+        for compte in (autre_prof, autre_eleve):
+            self.client.force_login(compte)
+            self.assertEqual(self.client.get(self.url).status_code, 404)
+
+    def test_visiteur_redirige_vers_la_connexion(self):
+        self.assertEqual(self.client.get(self.url).status_code, 302)
+
+    def test_aucune_adresse_media_publique(self):
+        self.client.force_login(self.affectation.professeur)
+        self.assertEqual(self.client.get(f"/media/{self.document.fichier.name}").status_code, 404)

@@ -1,18 +1,149 @@
 {% extends "base.html" %}
-
-{% block titre %}Documents{% endblock %}
-
+{% block titre %}Documents · Cahier de texte{% endblock %}
+{% block fil_ariane %}Documents{% endblock %}
 {% block contenu %}
-  <h1>Documents importés</h1>
-  {% for message in messages %}
-    <p>{{ message }}</p>
-  {% endfor %}
-  <p><a href="{% url 'documents:importer' %}">Importer un document</a></p>
-  <ul>
-    {% for document in documents %}
-      <li>{{ document.nom_original }} ({{ document.taille_octets|filesizeformat }}){% if document.chapitre %} — {{ document.chapitre }}{% endif %}</li>
-    {% empty %}
-      <li>Aucun document pour le moment.</li>
-    {% endfor %}
-  </ul>
+<section class="page-heading">
+  <div><h1>Documents</h1><p>Centralisez les supports de cours et les plans associés.</p></div>
+  <a class="button" href="#importer">↑ Importer un document</a>
+</section>
+
+<section class="panel">
+  <div class="panel-heading">
+    <div><h2>Bibliothèque de documents</h2><p>{{ documents|length }} document{{ documents|length|pluralize }} associé{{ documents|length|pluralize }} à vos affectations.</p></div>
+  </div>
+  <form method="get" class="filter-form" style="grid-template-columns:1fr 1fr 1fr auto;margin-bottom:13px">
+    <div><label for="affectation">Affectation</label><select id="affectation" name="affectation"><option value="">Toutes les affectations</option>{% for item in affectations %}<option value="{{ item.pk }}" {% if affectation_filtre == item.pk|stringformat:"s" %}selected{% endif %}>{{ item.professeur.get_full_name|default:item.professeur.username }} · {{ item.classe.nom }} · {{ item.matiere.nom }}</option>{% endfor %}</select></div>
+    <div><label for="chapitre">Chapitre</label><input id="chapitre" name="chapitre" value="{{ chapitre_filtre }}" placeholder="Tous les chapitres"></div>
+    <div><label for="q">Rechercher</label><input id="q" name="q" value="{{ q }}" placeholder="Nom du document"></div>
+    <button class="button" type="submit">Rechercher</button>
+  </form>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Nom original</th><th>Affectation</th><th>Chapitre</th><th>Format</th><th>Taille</th><th>Importé le</th><th></th></tr></thead>
+      <tbody>
+        {% for document in documents %}
+          <tr class="{% if selection.pk == document.pk %}row-selected{% endif %}">
+            <td><a class="table-link" href="{% url 'documents:liste' %}?document={{ document.pk }}">{{ document.nom_original }}</a></td>
+            <td>{{ document.affectation.professeur.get_full_name|default:document.affectation.professeur.username }}<br><span class="muted">{{ document.affectation.classe.nom }} · {{ document.affectation.matiere.nom }}</span></td>
+            <td>{{ document.chapitre|default:"—" }}</td>
+            <td>{% if document.type_mime == "application/pdf" %}PDF{% elif document.type_mime == "text/plain" %}TXT{% elif document.type_mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" %}DOCX{% elif document.type_mime == "application/vnd.openxmlformats-officedocument.presentationml.presentation" %}PPTX{% elif document.type_mime == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" %}XLSX{% else %}Fichier{% endif %}</td>
+            <td>{{ document.taille_octets|filesizeformat }}</td>
+            <td>{{ document.date_import|date:"d/m/Y" }}</td>
+            <td><a class="table-link" href="{% url 'documents:liste' %}?document={{ document.pk }}">Détail</a></td>
+          </tr>
+        {% empty %}<tr><td colspan="7" class="empty-state">Aucun document ne correspond à votre recherche. Importez votre premier support de cours.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="management-grid" style="margin-top:15px">
+  <section class="panel">
+    <div class="panel-heading">
+      <div><h2>Détail du document</h2><p>{% if selection %}{{ selection.nom_original }}{% else %}Sélectionnez un document dans la bibliothèque.{% endif %}</p></div>
+    </div>
+    {% if selection %}
+      <div class="document-preview">
+        <strong>▤ Support de cours et exercices</strong>
+        <span class="small-text muted">{{ selection.type_mime }} · {{ selection.taille_octets|filesizeformat }} · importé le {{ selection.date_import|date:"d/m/Y à H:i" }}</span>
+      </div>
+      <div class="detail-list">
+        <div class="detail-item"><span>Affectation</span><strong>{{ selection.affectation.professeur.get_full_name|default:selection.affectation.professeur.username }} · {{ selection.affectation.classe.nom }} · {{ selection.affectation.matiere.nom }}</strong></div>
+        <div class="detail-item"><span>Chapitre</span><strong>{{ selection.chapitre|default:"Non renseigné" }}</strong></div>
+      </div>
+      <div class="form-actions">
+        <a class="button secondary" href="{% url 'documents:telecharger' selection.pk %}">↓ Télécharger</a>
+        {% if user.est_administrateur or selection.affectation.professeur_id == user.id %}
+          <button type="button" class="button" data-generer data-url="{% url 'plans:generer_plan' selection.pk %}">☷ Générer un plan</button>
+        {% endif %}
+      </div>
+      <div data-zone-plan aria-live="polite"></div>
+      <h3 class="small-text" style="margin:16px 0 6px;font-weight:700">Plans rattachés à ce document ({{ selection.plans.count }})</h3>
+      <div class="table-wrap">
+        <table class="data-table"><thead><tr><th>Génération</th><th>Statut</th><th>Validation</th><th></th></tr></thead>
+          <tbody>{% for plan in selection.plans.all %}
+            <tr><td>{{ plan.date_generation|date:"d/m/Y" }}</td><td><span class="tag {% if plan.statut == 'valide' %}success{% endif %}">{{ plan.get_statut_display }}</span></td><td>{{ plan.date_validation|date:"d/m/Y"|default:"Non validé" }}</td><td><a class="table-link" href="{% url 'plans:detail' plan.pk %}">{% if plan.statut == 'propose' %}Relire et valider{% else %}Consulter{% endif %}</a></td></tr>
+          {% empty %}<tr><td colspan="4" class="muted">Aucun plan rattaché.</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">Choisissez un document pour consulter son détail, télécharger le fichier ou lancer la génération du plan.</div>
+    {% endif %}
+  </section>
+
+  <section class="panel" id="importer">
+    <div class="panel-heading"><div><h2>Importer un document</h2><p>Choisissez son affectation et son chapitre.</p></div></div>
+    <form method="post" enctype="multipart/form-data" class="form-grid">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="form-field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="form-help">{{ field.help_text }}</div>{% endif %}
+          {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+      {% if form.non_field_errors %}<ul class="errorlist">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+      <div class="notice">Formats acceptés : PDF, DOCX, PPTX, XLSX et TXT. Taille maximale : {{ taille_max|filesizeformat }}.</div>
+      <div class="form-actions"><button class="button" type="submit">↑ Importer</button><a class="button secondary" href="{% url 'documents:liste' %}">Annuler</a></div>
+    </form>
+  </section>
+</div>
+
+<script>
+(function () {
+  function arbre(noeuds) {
+    var liste = document.createElement("ul");
+    noeuds.forEach(function (noeud) {
+      var item = document.createElement("li");
+      item.textContent = noeud.libelle;
+      if (noeud.enfants && noeud.enfants.length) {
+        item.appendChild(arbre(noeud.enfants));
+      }
+      liste.appendChild(item);
+    });
+    return liste;
+  }
+
+  var button = document.querySelector("[data-generer]");
+  if (!button) return;
+  var csrf = "{{ csrf_token }}";
+  button.addEventListener("click", function () {
+    var zone = document.querySelector("[data-zone-plan]");
+    button.disabled = true;
+    button.textContent = "Génération en cours…";
+    zone.textContent = "";
+    fetch(button.dataset.url, { method: "POST", headers: { "X-CSRFToken": csrf }, credentials: "same-origin" })
+      .then(function (response) {
+        return response.json().catch(function () { return {}; }).then(function (data) {
+          if (!response.ok) throw new Error(data.erreur || "La génération a échoué.");
+          var result = document.createElement("div");
+          result.className = "notice";
+          var label = document.createElement("strong");
+          label.textContent = "Plan proposé par l’IA (à valider) :";
+          result.appendChild(label);
+          result.appendChild(arbre(data.titres));
+          if (data.url) {
+            var lien = document.createElement("a");
+            lien.className = "button";
+            lien.href = data.url;
+            lien.textContent = "Relire, corriger et valider ce plan →";
+            result.appendChild(lien);
+          }
+          zone.appendChild(result);
+        });
+      })
+      .catch(function (error) {
+        var result = document.createElement("p");
+        result.className = "message error";
+        result.textContent = error.message || "Impossible de joindre le serveur.";
+        zone.appendChild(result);
+      })
+      .finally(function () {
+        button.disabled = false;
+        button.textContent = "☷ Générer un plan";
+      });
+  });
+})();
+</script>
 {% endblock %}

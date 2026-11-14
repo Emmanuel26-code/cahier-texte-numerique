@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titre %}{% if seance %}Modifier la séance{% else %}Nouvelle séance{% endif %} · Cahier de texte{% endblock %}
+{% block fil_ariane %}<a href="{% url 'cahier:liste' %}">Cahier de texte</a> / {% if seance %}Modifier{% else %}Nouvelle séance{% endif %}{% endblock %}
+{% block contenu %}
+<section class="page-heading">
+  <div>
+    <h1>{% if seance %}Modifier la séance{% else %}Nouvelle séance{% endif %}</h1>
+    <p>{% if seance %}L’ancienne version sera conservée dans l’historique.{% else %}Renseignez le contenu traité et le travail à faire.{% endif %}</p>
+  </div>
+  <a class="button secondary" href="{% if seance %}{% url 'cahier:detail' seance.pk %}{% else %}{% url 'cahier:liste' %}{% endif %}">← Retour</a>
+</section>
+
+<section class="panel">
+  {% if not form.fields.affectation.queryset.exists %}
+    <div class="empty-state">Aucune affectation ne vous est attribuée. Demandez à l’administration de vous affecter à une classe et à une matière.</div>
+  {% else %}
+  <form method="post" class="form-grid two" novalidate>
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="form-field{% if field.name == 'contenu_traite' or field.name == 'travail_a_faire' or field.name == 'points_du_plan' %} span-two{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="form-help">{{ field.help_text }}</div>{% endif %}
+        {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+      </div>
+    {% endfor %}
+    {% if form.non_field_errors %}<ul class="errorlist span-two">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+    <div class="form-actions span-two">
+      <button class="button" type="submit">{% if seance %}Enregistrer les modifications{% else %}Enregistrer la séance{% endif %}</button>
+      <a class="button secondary" href="{% if seance %}{% url 'cahier:detail' seance.pk %}{% else %}{% url 'cahier:liste' %}{% endif %}">Annuler</a>
+    </div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

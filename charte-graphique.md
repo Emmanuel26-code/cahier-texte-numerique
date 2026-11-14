@@ -4,11 +4,18 @@
 Bootstrap 5.3 (choisi pour sa simplicité et son responsive intégré).
 
 ## Couleurs
-- Couleur principale : #1F4E79 (bleu)
-- Couleur secondaire : #2E8B57 (vert)
-- Fond de page : #F5F7FA
-- Texte : #222222
+- Couleur principale : #2864F0 (bleu)
+- Couleur principale au survol : #174BD1
+- Fond de page : #F5F6F8
+- Surface des panneaux : #FFFFFF
+- Texte : #1F2937
+- Bordures : #E4E7EC
 - Erreurs : #B00020
+
+## Composants
+- Navigation latérale fixe sur ordinateur, repliable sur mobile.
+- Panneaux blancs à coins arrondis et tableaux compacts.
+- Formulaires et actions conçus pour les écrans larges comme les téléphones.
 
 ## Police
 Segoe UI, sans-serif

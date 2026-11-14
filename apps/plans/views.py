@@ -2,14 +2,19 @@ import logging
 
 from django.conf import settings
 from django.core.cache import cache
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.http import Http404, JsonResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.comptes.models import Utilisateur
 from apps.documents.models import Document
 
-from .models import Titre
+from .models import Plan, Titre
 from .services.erreurs import ConfigurationIAError, ExtractionError, GenerationPlanError, LLMError
 from .services.generation import generer_plan_pour_document
 
@@ -93,8 +98,88 @@ def generer_plan(request, document_id):
         {
             "plan_id": plan.id,
             "statut": plan.statut,
+            "url": reverse("plans:detail", args=[plan.id]),
             "document_id": document.id,
             "titres": _arbre_en_dict(plan),
         },
         status=201,
+    )
+
+
+# --- Consultation, correction et validation d'un plan --------------------------------
+
+def _peut_modifier(utilisateur, plan):
+    return utilisateur.est_administrateur or (
+        utilisateur.est_professeur and plan.document.affectation.professeur_id == utilisateur.id
+    )
+
+
+def _peut_voir(utilisateur, plan):
+    """Professeur propriétaire et administrateur : toujours. Élève : plans VALIDÉS de sa classe."""
+    if _peut_modifier(utilisateur, plan):
+        return True
+    return (
+        utilisateur.est_eleve
+        and plan.statut == Plan.Statut.VALIDE
+        and utilisateur.classes_suivies.filter(pk=plan.document.affectation.classe_id).exists()
+    )
+
+
+@login_required
+def detail_plan(request, plan_id):
+    """Affiche l'arbre du plan ; le professeur peut corriger les libellés, retirer des
+    points, puis valider (le plan devient visible des élèves) ou rejeter le plan."""
+    plan = get_object_or_404(
+        Plan.objects.select_related(
+            "document__affectation__professeur",
+            "document__affectation__classe",
+            "document__affectation__matiere",
+        ),
+        pk=plan_id,
+    )
+    if not _peut_voir(request.user, plan):
+        raise Http404("Plan introuvable.")
+    modifiable = _peut_modifier(request.user, plan) and plan.statut == Plan.Statut.PROPOSE
+
+    if request.method == "POST":
+        if not modifiable:
+            raise Http404("Plan introuvable.")
+        action = request.POST.get("action")
+        with transaction.atomic():
+            a_supprimer = set(request.POST.getlist("supprimer"))
+            for titre in plan.titres.all():
+                if str(titre.pk) in a_supprimer:
+                    continue
+                libelle = request.POST.get(f"libelle_{titre.pk}", "").strip()[:255]
+                if libelle and libelle != titre.libelle:
+                    titre.libelle = libelle
+                    titre.save(update_fields=["libelle"])
+            # Supprimer un point supprime aussi ses sous-points (on_delete=CASCADE).
+            plan.titres.filter(pk__in=[pk for pk in a_supprimer if pk.isdigit()]).delete()
+
+            if action == "valider":
+                if not plan.titres.exists():
+                    messages.error(request, "Un plan vide ne peut pas être validé.")
+                    return redirect("plans:detail", plan_id=plan.pk)
+                plan.statut = Plan.Statut.VALIDE
+                plan.date_validation = timezone.now()
+                plan.save(update_fields=["statut", "date_validation"])
+                messages.success(request, "Plan validé : il est maintenant visible par les élèves de la classe.")
+            elif action == "rejeter":
+                plan.statut = Plan.Statut.REJETE
+                plan.save(update_fields=["statut"])
+                messages.success(request, "Plan rejeté.")
+            else:
+                messages.success(request, "Modifications enregistrées.")
+        return redirect("plans:detail", plan_id=plan.pk)
+
+    return render(
+        request,
+        "plans/detail.html",
+        {
+            "plan": plan,
+            "titres": plan.titres.order_by("ordre"),
+            "modifiable": modifiable,
+            "peut_gerer": _peut_modifier(request.user, plan),
+        },
     )

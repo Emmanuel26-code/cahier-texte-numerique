@@ -1,32 +1,13 @@
-{% extends "base.html" %} {% block content %} {% if user.is_authenticated %}
-Bonjour {{ user.first_name|default:user.username }} 👋
-Connecté en tant que {{ user.get_role_display|lower }}.
-
-{% url 'seance_liste' as u_liste %}{% url 'seance_creer' as u_new %}
-{% if user.role == 'professeur' %}
-✍️
-Nouvelle séance
-Renseigner le contenu traité et le travail à faire.
-
-{% endif %}
-📚
-{% if user.role == 'eleve' %}Mon cahier{% else %}Séances{% endif %}
-Consulter le cahier de texte par date, matière ou classe.
-
-{% if user.role == 'administrateur' %}
-⚙️
-Administration
-Années, classes, matières, affectations, utilisateurs.
-
-{% endif %}
-{{ nb_seances|default:"–" }}
-séances enregistrées
-
-{% else %}
-📘 Cahier de texte numérique
-Suivez le contenu des cours, le travail à faire et l'avancement du programme.
-
-{% url 'login' as u_in %}Se connecter
-{% endif %}
- {% endblock %}
->>>>>>> a0a9621 (interfaceprojet)
+{% extends "base.html" %}
+{% block titre %}Cahier de texte numérique{% endblock %}
+{% block contenu %}
+<section class="panel" style="max-width:640px;margin:40px auto;text-align:center">
+  <h1>Cahier de texte numérique</h1>
+  <p>Suivez le contenu des cours, le travail à faire et l’avancement du programme.
+     Les professeurs importent leurs cours et l’IA leur propose un plan à valider.</p>
+  <div class="form-actions" style="justify-content:center">
+    <a class="button" href="{% url 'login' %}">Se connecter</a>
+    <a class="button secondary" href="{% url 'inscription' %}">Créer un compte</a>
+  </div>
+</section>
+{% endblock %}

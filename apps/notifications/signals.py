@@ -52,6 +52,7 @@ def memoriser_ancien_statut(sender, instance, **kwargs):
 def notifier_nouveau_plan(sender, instance, **kwargs):
     if instance.statut != Plan.Statut.VALIDE or instance._ancien_statut == Plan.Statut.VALIDE:
         return
-    aff = _affectation(instance)
+    # Le plan est rattaché à l'affectation via son document.
+    aff = Affectation.objects.select_related("matiere").get(documents__pk=instance.document_id)
     message = f"Nouveau plan de cours en {aff.matiere.nom} : {extrait(instance.titre)}"
     notifier_eleves_de_la_classe(aff.classe_id, Notification.Type.PLAN, message)

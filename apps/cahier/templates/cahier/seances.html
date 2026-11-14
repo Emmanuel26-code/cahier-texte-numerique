@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titre %}Cahier de texte{% endblock %}
+{% block fil_ariane %}Cahier de texte{% endblock %}
+{% block contenu %}
+<section class="page-heading">
+  <div><h1>Cahier de texte</h1><p>Retrouvez les séances et le travail donné pour vos classes.</p></div>
+  {% if user.est_professeur or user.est_administrateur %}<a class="button" href="{% url 'cahier:creer' %}">＋ Nouvelle séance</a>{% endif %}
+</section>
+<section class="panel">
+  <div class="panel-heading"><div><h2>Séances</h2><p>{{ seances|length }} séance{{ seances|length|pluralize }}</p></div></div>
+  <form method="get" class="filter-form" style="grid-template-columns:minmax(220px,1fr) auto;margin-bottom:14px">
+    <div><label for="q">Rechercher</label><input id="q" name="q" value="{{ recherche }}" placeholder="Séance, matière ou classe"></div>
+    <button class="button" type="submit">Rechercher</button>
+  </form>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Séance</th><th>Classe et matière</th><th>Travail à faire</th><th>Durée</th><th></th></tr></thead>
+      <tbody>
+        {% for seance in seances %}
+          <tr>
+            <td>{{ seance.date_seance|date:"d/m/Y" }}</td>
+            <td><strong>{{ seance.titre }}</strong><br><span class="muted">{{ seance.contenu_traite|truncatewords:16 }}</span></td>
+            <td>{{ seance.affectation.classe.nom }}<br><span class="muted">{{ seance.affectation.matiere.nom }}</span></td>
+            <td>{{ seance.travail_a_faire|default:"—"|truncatewords:14 }}</td>
+            <td>{{ seance.duree_minutes }} min</td>
+            <td><a class="table-link" href="{% url 'cahier:detail' seance.pk %}">Consulter</a></td>
+          </tr>
+        {% empty %}<tr><td colspan="6" class="empty-state">Aucune séance visible pour le moment.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

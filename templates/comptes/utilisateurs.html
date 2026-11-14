@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block titre %}Utilisateurs · Cahier de texte{% endblock %}
+{% block fil_ariane %}Utilisateurs{% endblock %}
+{% block contenu %}
+<section class="page-heading">
+  <div><h1>Utilisateurs</h1><p>Gérez les profils, les rôles et les inscriptions aux classes.</p></div>
+  <a class="button" href="{% url 'utilisateurs' %}?nouveau=1">＋ Nouvel utilisateur</a>
+</section>
+
+<section class="panel">
+  <div class="panel-heading">
+    <div><h2>Utilisateurs de l’établissement</h2><p>{{ comptes|length }} résultat{{ comptes|length|pluralize }} sur {{ nombre_total }} compte{{ nombre_total|pluralize }}</p></div>
+  </div>
+  <form method="get" class="filter-form" style="grid-template-columns:minmax(180px,1.5fr) repeat(2,minmax(130px,1fr)) auto;margin-bottom:14px">
+    <div><label for="q">Rechercher</label><input id="q" name="q" value="{{ q }}" placeholder="Nom, prénom ou e-mail"></div>
+    <div><label for="role">Rôle</label><select id="role" name="role"><option value="">Tous les rôles</option>{% for value,label in roles %}<option value="{{ value }}" {% if role_filtre == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div><label for="classe">Classe d’inscription</label><select id="classe" name="classe"><option value="">Toutes les classes</option>{% for classe in classes %}<option value="{{ classe.pk }}" {% if classe_filtre == classe.pk|stringformat:"s" %}selected{% endif %}>{{ classe.nom }} · {{ classe.annee.libelle }}</option>{% endfor %}</select></div>
+    <button class="button" type="submit">Filtrer</button>
+  </form>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Nom</th><th>Prénom</th><th>E-mail</th><th>Rôle</th><th>Classes d’inscription</th><th>Compte</th><th></th></tr></thead>
+      <tbody>
+        {% for compte in comptes %}
+          <tr class="{% if selection.pk == compte.pk %}row-selected{% endif %}">
+            <td><strong>{{ compte.last_name|default:"—" }}</strong></td>
+            <td>{{ compte.first_name|default:compte.username }}</td>
+            <td>{{ compte.email }}</td>
+            <td>{{ compte.get_role_display }}</td>
+            <td>{% if compte.est_eleve %}{{ compte.nombre_classes }} classe{{ compte.nombre_classes|pluralize }}{% else %}—{% endif %}</td>
+            <td>{% if compte.is_active %}<span class="tag success">Actif</span>{% else %}<span class="tag">Désactivé</span>{% endif %}</td>
+            <td><a class="table-link" href="{% url 'utilisateurs' %}?modifier={{ compte.pk }}&amp;q={{ q|urlencode }}&amp;role={{ role_filtre|urlencode }}&amp;classe={{ classe_filtre|urlencode }}">Gérer le profil</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="empty-state">Aucun utilisateur ne correspond à ces filtres.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="management-grid" style="margin-top:15px">
+  <section class="panel">
+    <div class="panel-heading">
+      <div><h2>{% if selection %}Profil de {{ selection.get_full_name|default:selection.username }}{% else %}Créer un utilisateur{% endif %}</h2><p>Modifiez les informations et le rôle du compte.</p></div>
+    </div>
+    <form method="post" class="form-grid two">
+      {% csrf_token %}
+      {% if selection %}<input type="hidden" name="user_id" value="{{ selection.pk }}">{% endif %}
+      {% for field in form %}
+        <div class="form-field {% if field.name == 'classes' %}span-two{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="form-help">{{ field.help_text }}</div>{% endif %}
+          {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+      {% if form.non_field_errors %}<ul class="errorlist span-two">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+      <div class="form-actions span-two">
+        <button class="button" type="submit">Enregistrer le profil</button>
+        {% if selection %}<a class="button secondary" href="{% url 'utilisateurs' %}">Annuler</a>{% endif %}
+      </div>
+    </form>
+    <p class="notice">Les mots de passe ne sont jamais affichés. Laissez ce champ vide pour conserver le mot de passe existant.</p>
+  </section>
+
+  <div class="form-grid" style="align-content:start">
+    <section class="panel">
+      <div class="panel-heading"><div><h2>Affectations de {% if selection %}{{ selection.first_name|default:selection.username }}{% else %}l’enseignant{% endif %}</h2><p>Affectations pédagogiques de l’enseignant.</p></div></div>
+      {% if selection and selection.est_professeur %}
+        {% for affectation in selection.affectations.all %}
+          <div class="field-row"><strong>{{ affectation.classe.nom }}</strong><span>{{ affectation.matiere.nom }} · <a class="table-link" href="{% url 'academique:affectations' %}?modifier={{ affectation.pk }}">Consulter</a></span></div>
+        {% empty %}<p class="small-text muted">Aucune affectation pour le moment.</p>{% endfor %}
+        <p style="margin:12px 0 0"><a class="table-link" href="{% url 'academique:affectations' %}">Gérer les affectations →</a></p>
+      {% else %}
+        <p class="small-text muted">{% if selection %}Ce profil n’est pas un enseignant.{% else %}Sélectionnez un enseignant pour consulter ses affectations.{% endif %}</p>
+      {% endif %}
+    </section>
+    <section class="panel">
+      <div class="panel-heading"><div><h2>Inscriptions aux classes</h2><p>{% if selection %}{{ selection.get_full_name|default:selection.username }}{% else %}Profil sélectionné{% endif %}</p></div></div>
+      {% if selection and selection.est_eleve %}
+        {% for inscription in inscriptions %}
+          <div class="field-row"><strong>{{ inscription.classe.nom }}</strong><span>Année scolaire {{ inscription.classe.annee.libelle }}</span></div>
+        {% empty %}<p class="small-text muted">Aucune inscription en classe.</p>{% endfor %}
+        <div class="notice">Pour ajouter ou retirer des classes, sélectionnez-les dans le champ « Classes d’inscription » du profil puis enregistrez.</div>
+      {% else %}
+        <p class="small-text muted">{% if selection %}Les inscriptions aux classes sont réservées aux profils élèves.{% else %}Sélectionnez un élève pour gérer ses inscriptions.{% endif %}</p>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

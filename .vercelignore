@@ -1,0 +1,12 @@
+.venv/
+venv/
+media/
+staticfiles/
+**/__pycache__/
+*.pyc
+.env
+apps.zip
+installer.bat
+lancer.bat
+.env.production
+.neon

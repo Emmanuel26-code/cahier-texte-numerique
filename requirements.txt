@@ -1,9 +1,14 @@
 asgiref==3.12.1
 Django==5.2.18
+dj-database-url==3.0.1
+django-storages[s3]==1.14.6
 google-genai==2.30.1
-mysqlclient==2.3.0
+gunicorn==23.0.0
 pdfplumber==0.11.10
+psycopg[binary]==3.2.10
+PyMySQL==1.1.2
 python-docx==1.2.0
 python-dotenv==1.2.4
 sqlparse==0.6.0
 tzdata==2026.5
+whitenoise==6.11.0

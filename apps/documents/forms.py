@@ -10,9 +10,9 @@ class DocumentForm(forms.ModelForm):
         model = Document
         fields = ("affectation", "fichier", "chapitre")
 
-    def __init__(self, *args, professeur, **kwargs):
+    def __init__(self, *args, professeur=None, **kwargs):
         super().__init__(*args, **kwargs)
-        # Un professeur ne peut rattacher un document qu'à ses propres affectations.
-        self.fields["affectation"].queryset = Affectation.objects.filter(
-            professeur=professeur
-        ).select_related("classe", "matiere")
+        affectations = Affectation.objects.select_related("classe", "matiere", "professeur")
+        if professeur is not None:
+            affectations = affectations.filter(professeur=professeur)
+        self.fields["affectation"].queryset = affectations
