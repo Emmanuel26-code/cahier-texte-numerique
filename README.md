@@ -101,7 +101,8 @@ Vercel exécute Django en fonctions serverless. Deux conséquences :
 ### 2. Créer le projet Vercel
 
 1. Sur https://vercel.com : **Add New > Project**, importer le dépôt GitHub.
-2. Framework : **Other**. Laisser les commandes de build vides.
+2. Framework : **Django** (détecté automatiquement). Laisser les commandes de build vides.
+   Les fonctions tournent à Francfort (`fra1`, voir `vercel.json`), à côté de la base Neon.
 3. Dans **Settings > Environment Variables** (environnement *Production*), importer le contenu
    de `.env.production` (bouton *Import .env*), puis ajouter `GEMINI_API_KEY`. On y trouve :
 
@@ -129,6 +130,10 @@ $env:DJANGO_ENV_FILE=".env.production"; .venv\Scripts\python.exe manage.py creat
 Puis, dans GitHub > Settings > Secrets and variables > Actions, créer le secret
 `PRODUCTION_DATABASE_URL` avec la valeur `DATABASE_URL_UNPOOLED` de `.env.production`
 (connexion directe, recommandée pour les migrations).
+
+> **Déjà fait pour ce projet :** projet Vercel `cahier-texte-numerique`, variables de production
+> importées, site en ligne sur **https://cahier-texte-numerique.vercel.app**.
+> Pour redéployer à la main : `vercel deploy --prod`.
 
 ### 4. Ensuite, tout est automatique
 
