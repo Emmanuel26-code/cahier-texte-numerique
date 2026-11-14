@@ -10,3 +10,6 @@ installer.bat
 lancer.bat
 .env.production
 .neon
+.env.local
+.vercel/
+.github/

@@ -15,3 +15,4 @@ staticfiles/
 # Secrets de production (Neon) : jamais commités
 .env.production
 .neon
+.env.local
