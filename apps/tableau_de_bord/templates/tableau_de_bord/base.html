@@ -2,24 +2,6 @@
 {% comment %}Gabarit commun des tableaux de bord : reprend la mise en page de l'application
 (menu latéral, barre du haut) et ajoute les styles propres aux cartes.{% endcomment %}
 {% block fil_ariane %}Tableau de bord{% endblock %}
-{% block styles %}
-<style>
-  .tdb{display:flex;flex-direction:column;gap:16px}
-  .tdb h1{margin:0;font-size:1.5rem} .tdb h2{margin:0 0 10px;font-size:1rem}
-  .tdb-entete{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center}
-  .carte{background:#fff;border:1px solid #DDE3EC;border-radius:12px;padding:20px}
-  .grille{display:flex;flex-wrap:wrap;gap:16px} .grille>*{flex:1 1 240px}
-  .devoir{border:1px solid #DDE3EC;border-radius:10px;padding:14px}
-  .discret{color:#4A5568;font-size:.9rem}
-  .pastille{display:inline-block;padding:2px 10px;border-radius:999px;background:#E3EDF8;color:#0F3F73;font-size:.85rem;font-weight:600}
-  ul.liste{list-style:none;margin:0;padding:0} ul.liste li{padding:10px 0;border-bottom:1px solid #EEF2F7}
-  ul.liste li:last-child{border-bottom:0}
-  .chiffres{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-  .chiffre{background:#fff;border:1px solid #DDE3EC;border-radius:12px;padding:16px}
-  .chiffre strong{display:block;font-size:1.7rem;line-height:1.2}
-  .alerte{border-left:4px solid #D97706}
-</style>
-{% endblock %}
 {% block contenu %}
 <div class="tdb">
   <div class="tdb-entete">
