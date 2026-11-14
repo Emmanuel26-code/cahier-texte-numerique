@@ -1,10 +1,13 @@
 {% extends "base.html" %}
-
+{% block titre %}Cahier de texte numérique{% endblock %}
 {% block contenu %}
+<section class="panel" style="max-width:640px;margin:40px auto;text-align:center">
   <h1>Cahier de texte numérique</h1>
-  {% if user.is_authenticated %}
-    <p>Bienvenue {{ user.first_name|default:user.username }} !</p>
-  {% else %}
-    <p>Connectez-vous ou créez un compte pour accéder au cahier de texte.</p>
-  {% endif %}
+  <p>Suivez le contenu des cours, le travail à faire et l’avancement du programme.
+     Les professeurs importent leurs cours et l’IA leur propose un plan à valider.</p>
+  <div class="form-actions" style="justify-content:center">
+    <a class="button" href="{% url 'login' %}">Se connecter</a>
+    <a class="button secondary" href="{% url 'inscription' %}">Créer un compte</a>
+  </div>
+</section>
 {% endblock %}

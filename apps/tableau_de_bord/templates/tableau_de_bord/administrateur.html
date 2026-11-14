@@ -1,0 +1,52 @@
+{% extends "tableau_de_bord/base.html" %}
+{% block titre %}Tableau de bord – Administration{% endblock %}
+{% block entete %}
+  <h1>Administration</h1>
+  <p class="discret">Vue d’ensemble de l’établissement{% if annee_scolaire_courante %} · {{ annee_scolaire_courante.libelle }}{% endif %}</p>
+{% endblock %}
+{% block cloche %}
+  <a class="button" href="{% url 'academique:affectations' %}?nouveau=1">＋ Affectation</a>
+  <a class="button secondary" href="{% url 'utilisateurs' %}">Utilisateurs</a>
+{% endblock %}
+{% block tableau %}
+<section class="chiffres" aria-label="Chiffres clés">
+  <div class="chiffre"><strong>{{ nb_professeurs }}</strong><span class="discret">professeur{{ nb_professeurs|pluralize }}</span></div>
+  <div class="chiffre"><strong>{{ nb_eleves }}</strong><span class="discret">élève{{ nb_eleves|pluralize }}</span></div>
+  <div class="chiffre"><strong>{{ nb_classes }}</strong><span class="discret">classe{{ nb_classes|pluralize }}</span></div>
+  <div class="chiffre"><strong>{{ nb_affectations }}</strong><span class="discret">affectation{{ nb_affectations|pluralize }}</span></div>
+  <div class="chiffre"><strong>{{ nb_seances }}</strong><span class="discret">séance{{ nb_seances|pluralize }}</span></div>
+  <div class="chiffre"><strong>{{ nb_documents }}</strong><span class="discret">document{{ nb_documents|pluralize }}</span></div>
+  <div class="chiffre"><strong>{{ nb_plans_valides }}</strong><span class="discret">plan{{ nb_plans_valides|pluralize }} validé{{ nb_plans_valides|pluralize }}</span></div>
+  <div class="chiffre"><strong>{{ nb_plans_en_attente }}</strong><span class="discret">plan{{ nb_plans_en_attente|pluralize }} en attente</span></div>
+</section>
+
+<div class="grille">
+  <section class="carte{% if affectations_sans_seance or eleves_sans_classe %} alerte{% endif %}" aria-labelledby="titre-attention">
+    <h2 id="titre-attention">Points d’attention</h2>
+    <ul class="liste">
+      {% if eleves_sans_classe %}
+      <li><strong>{{ eleves_sans_classe }} élève{{ eleves_sans_classe|pluralize }} sans classe</strong>
+        <div class="discret">Ils ne voient aucune séance. <a href="{% url 'utilisateurs' %}">Les inscrire</a></div></li>
+      {% endif %}
+      {% for a in affectations_sans_seance %}
+      <li><strong>{{ a.classe.nom }} · {{ a.matiere.nom }}</strong>
+        <div class="discret">Aucune séance saisie par {{ a.professeur.get_full_name|default:a.professeur.username }}</div></li>
+      {% endfor %}
+      {% if not eleves_sans_classe and not affectations_sans_seance %}<li class="discret">Rien à signaler.</li>{% endif %}
+    </ul>
+  </section>
+
+  <section class="carte" aria-labelledby="titre-historique">
+    <h2 id="titre-historique">Dernières modifications de séances</h2>
+    {% if dernieres_modifications %}
+    <ul class="liste">
+      {% for h in dernieres_modifications %}
+      <li><strong>{{ h.seance.titre }}</strong> <span class="pastille">{{ h.get_action_display }}</span>
+        <div class="discret">{{ h.seance.affectation.classe.nom }} · par {{ h.modifie_par.get_full_name|default:h.modifie_par.username }} · {{ h.date_action|date:"j F à H:i" }}</div></li>
+      {% endfor %}
+    </ul>
+    <p style="margin:10px 0 0"><a href="{% url 'cahier:historique' %}">Tout l’historique →</a></p>
+    {% else %}<p class="discret">Aucune modification enregistrée.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

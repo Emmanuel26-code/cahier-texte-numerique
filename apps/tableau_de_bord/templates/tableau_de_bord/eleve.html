@@ -1,16 +1,15 @@
 {% extends "tableau_de_bord/base.html" %}
 {% block titre %}Tableau de bord – Élève{% endblock %}
 {% block cloche %}
-<a href="{% url 'notifications:liste' %}" aria-label="Notifications : {{ nb_non_lues }} non lue{{ nb_non_lues|pluralize }}">
+<a class="button secondary" href="{% url 'notifications:liste' %}" aria-label="Notifications : {{ nb_non_lues }} non lue{{ nb_non_lues|pluralize }}">
   Notifications{% if nb_non_lues %} <span class="pastille">{{ nb_non_lues }}</span>{% endif %}
 </a>
 {% endblock %}
-{% block contenu %}
-<div>
+{% block entete %}
   <h1>Bonjour, {{ request.user.first_name|default:request.user.username }}</h1>
   <p class="discret">{% if classes %}Classe{{ classes|length|pluralize }} : {{ classes|join:", " }} · {% endif %}Voici ce qu’il y a à faire.</p>
-</div>
-
+{% endblock %}
+{% block tableau %}
 {% if sans_classe %}
 <section class="carte">
   <h2>Aucune classe</h2>
@@ -25,7 +24,7 @@
     <article class="devoir">
       <div><strong>{{ s.affectation.matiere }}</strong></div>
       <div>{{ s.travail_a_faire }}</div>
-      <div class="discret">Séance du {{ s.date_seance|date:"j F" }}</div>
+      <div class="discret">Séance du {{ s.date_seance|date:"j F" }} · <a href="{% url 'cahier:detail' s.pk %}">voir la séance</a></div>
     </article>
     {% endfor %}
   </div>
@@ -40,7 +39,7 @@
     {% if seances %}
     <ul class="liste">
       {% for s in seances %}
-      <li><strong>{{ s.titre }}</strong><div class="discret">{{ s.affectation.matiere }} · {{ s.date_seance|date:"j F" }}</div></li>
+      <li><a href="{% url 'cahier:detail' s.pk %}"><strong>{{ s.titre }}</strong></a><div class="discret">{{ s.affectation.matiere }} · {{ s.date_seance|date:"j F" }}</div></li>
       {% endfor %}
     </ul>
     {% else %}<p class="discret">Aucune séance enregistrée.</p>{% endif %}
@@ -51,7 +50,7 @@
     {% if plans %}
     <ul class="liste">
       {% for p in plans %}
-      <li><strong>{{ p.titre }}</strong><div class="discret">{{ p.affectation.matiere }}</div></li>
+      <li><a href="{% url 'plans:detail' p.pk %}"><strong>{{ p.titre }}</strong></a><div class="discret">{{ p.affectation.matiere }}</div></li>
       {% endfor %}
     </ul>
     {% else %}<p class="discret">Aucun plan de cours publié.</p>{% endif %}

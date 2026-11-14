@@ -4,7 +4,11 @@ from django.shortcuts import redirect, render
 from apps.comptes.models import Utilisateur
 from apps.comptes.permissions import role_requis
 
-from .services import donnees_tableau_bord_eleve
+from .services import (
+    donnees_tableau_bord_administrateur,
+    donnees_tableau_bord_eleve,
+    donnees_tableau_bord_professeur,
+)
 
 
 @role_requis(Utilisateur.Role.ELEVE)
@@ -13,17 +17,16 @@ def tableau_de_bord_eleve(request):
     return render(request, "tableau_de_bord/eleve.html", donnees_tableau_bord_eleve(request.user))
 
 
-# --- Pages de remplacement (démonstration uniquement) --------------------------------
-# Les vrais tableaux de bord professeur (tâche 47) et administrateur (tâche 48) sont
-# réalisés par d'autres membres ; ces stubs servent aux tests d'accès par rôle (tâche 51).
 @role_requis(Utilisateur.Role.PROFESSEUR)
 def tableau_de_bord_professeur(request):
-    return render(request, "tableau_de_bord/en_construction.html", {"titre": "Tableau de bord professeur"})
+    """Tâche 47 : classes, séances récentes, plans IA à valider, documents."""
+    return render(request, "tableau_de_bord/professeur.html", donnees_tableau_bord_professeur(request.user))
 
 
 @role_requis(Utilisateur.Role.ADMINISTRATEUR)
 def tableau_de_bord_administrateur(request):
-    return render(request, "tableau_de_bord/en_construction.html", {"titre": "Tableau de bord administrateur"})
+    """Tâche 48 : chiffres clés de l'établissement et points d'attention."""
+    return render(request, "tableau_de_bord/administrateur.html", donnees_tableau_bord_administrateur())
 
 
 CIBLES = {

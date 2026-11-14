@@ -100,9 +100,9 @@ class RolesTests(TestCase):
 
     def test_menu_selon_le_role(self):
         self.client.force_login(self.prof)
-        self.assertContains(self.client.get("/"), "Importer un cours")
+        self.assertContains(self.client.get("/", follow=True), "Importer un cours")
         self.client.force_login(self.eleve)
-        self.assertNotContains(self.client.get("/"), "Importer un cours")
+        self.assertNotContains(self.client.get("/", follow=True), "Importer un cours")
 
 
 class GestionUtilisateursTests(TestCase):
