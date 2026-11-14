@@ -1,7 +1,5 @@
 # Cahier de texte numérique
 
-[![CI](https://github.com/Emmanuel26-code/cahier-texte-numerique/actions/workflows/ci.yml/badge.svg)](https://github.com/Emmanuel26-code/cahier-texte-numerique/actions/workflows/ci.yml)
-
 Application web de gestion du cahier de texte d'un établissement scolaire.
 Les professeurs enregistrent leurs séances, importent leurs cours (DOCX, PDF, TXT,PPTX, XLSX),
 et une intelligence artificielle propose automatiquement un plan de cours
@@ -24,7 +22,7 @@ HTTPS obligatoire en production, quota horaire de générations IA.
 - Python 3.12 et Django 5.2
 - MySQL (développement) · PostgreSQL ou MySQL (production)
 - Google Gemini (génération du plan de cours)
-- GitHub Actions (intégration continue) · Vercel (hébergement)
+- Neon (base de données et fichiers) · Vercel (hébergement)
 
 ## Installation sur un poste de développement (Windows)
 
@@ -62,19 +60,7 @@ python manage.py runserver
 python manage.py test
 ```
 
-## Intégration continue (CI)
-
-À chaque push et à chaque Pull Request vers `develop` ou `main`, GitHub Actions
-([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) vérifie, **sur MySQL et sur PostgreSQL** :
-
-1. la configuration Django (`check`) et la configuration de production (`check --deploy`) ;
-2. qu'aucune migration ne manque ;
-3. que tous les tests passent.
-
-Une Pull Request dont la CI est rouge ne doit pas être fusionnée. Pour l'imposer :
-GitHub > Settings > Branches > règle sur `develop` et `main` > *Require status checks to pass*.
-
-## Déploiement sur Vercel (CD)
+## Déploiement sur Vercel
 
 Vercel exécute Django en fonctions serverless. Deux conséquences :
 **la base de données et les fichiers importés doivent être hébergés ailleurs**
@@ -101,7 +87,8 @@ Vercel exécute Django en fonctions serverless. Deux conséquences :
 ### 2. Créer le projet Vercel
 
 1. Sur https://vercel.com : **Add New > Project**, importer le dépôt GitHub.
-2. Framework : **Other**. Laisser les commandes de build vides.
+2. Framework : **Django** (détecté automatiquement). Laisser les commandes de build vides.
+   Les fonctions tournent à Francfort (`fra1`, voir `vercel.json`), à côté de la base Neon.
 3. Dans **Settings > Environment Variables** (environnement *Production*), importer le contenu
    de `.env.production` (bouton *Import .env*), puis ajouter `GEMINI_API_KEY`. On y trouve :
 
@@ -126,19 +113,9 @@ indiquer le fichier `.env.production` avec `DJANGO_ENV_FILE` (PowerShell) :
 $env:DJANGO_ENV_FILE=".env.production"; .venv\Scripts\python.exe manage.py createsuperuser
 ```
 
-Puis, dans GitHub > Settings > Secrets and variables > Actions, créer le secret
-`PRODUCTION_DATABASE_URL` avec la valeur `DATABASE_URL_UNPOOLED` de `.env.production`
-(connexion directe, recommandée pour les migrations).
-
-### 4. Ensuite, tout est automatique
-
-```
-Pull Request vers develop ──► CI (tests MySQL + PostgreSQL)
-develop fusionnée dans main ──► GitHub Actions applique les migrations (deploiement.yml)
-                            └─► Vercel publie la nouvelle version
-```
-
-Chaque Pull Request reçoit aussi une **préversion Vercel** (adresse temporaire) pour tester avant fusion.
+> **Déjà fait pour ce projet :** projet Vercel `cahier-texte-numerique`, variables de production
+> importées, site en ligne sur **https://cahier-texte-numerique.vercel.app**.
+> Pour redéployer à la main : `vercel deploy --prod`.
 
 ## Équipe
 
