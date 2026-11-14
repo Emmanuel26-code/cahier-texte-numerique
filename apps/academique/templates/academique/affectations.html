@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block titre %}Affectations · Cahier de texte{% endblock %}
+{% block fil_ariane %}Affectations{% endblock %}
+{% block contenu %}
+<section class="page-heading">
+  <div>
+    <h1>Affectations</h1>
+    <p>Attribuez un enseignant à une classe et à une matière.</p>
+  </div>
+  <a class="button" href="{% url 'academique:affectations' %}?nouveau=1">＋ Nouvelle affectation</a>
+</section>
+
+<section class="panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Affectations de l’année</h2>
+      <p>{{ affectations|length }} affectation{{ affectations|length|pluralize }} · {{ nombre_enseignants }} enseignant{{ nombre_enseignants|pluralize }}</p>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Utilisateur / enseignant</th><th>Classe</th><th>Matière</th><th>Documents</th><th>Séances actives</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for item in affectations %}
+          <tr class="{% if selection.pk == item.pk %}row-selected{% endif %}">
+            <td><strong>{{ item.professeur.get_full_name|default:item.professeur.username }}</strong></td>
+            <td>{{ item.classe.nom }} <span class="muted">{{ item.classe.annee.libelle }}</span></td>
+            <td>{{ item.matiere.nom }}</td>
+            <td>{{ item.nombre_documents }}</td>
+            <td>{{ item.nombre_seances }}</td>
+            <td><a class="table-link" href="{% url 'academique:affectations' %}?modifier={{ item.pk }}">Modifier</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="empty-state">Aucune affectation pour le moment. Créez-en une pour rattacher les séances et les documents.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="small-text muted" style="margin:12px 0 0">Les séances et les documents sont rattachés à une affectation, et non à une simple inscription en classe.</p>
+</section>
+
+<div class="management-grid" style="margin-top:15px">
+  <section class="panel">
+    <div class="panel-heading">
+      <div>
+        <h2>{% if nouvelle or not selection %}Créer une affectation{% else %}Modifier l’affectation{% endif %}</h2>
+        <p>{% if selection %}Affectation sélectionnée : {{ selection.professeur.get_full_name|default:selection.professeur.username }} · {{ selection.classe.nom }}{% else %}Choisissez un enseignant, une classe et une matière.{% endif %}</p>
+      </div>
+    </div>
+    <form method="post" class="form-grid">
+      {% csrf_token %}
+      {% if selection and not nouvelle %}<input type="hidden" name="affectation_id" value="{{ selection.pk }}">{% endif %}
+      {% for field in form %}
+        <div class="form-field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+          {{ field }}
+          {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+      {% if form.non_field_errors %}<ul class="errorlist">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+      <div class="notice">Une affectation associe exactement un enseignant, une classe et une matière.</div>
+      <div class="form-actions">
+        <button class="button" type="submit">Enregistrer l’affectation</button>
+        {% if selection %}<a class="button secondary" href="{% url 'academique:affectations' %}">Annuler</a>{% endif %}
+      </div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <div><h2>Éléments associés</h2><p>{% if selection %}{{ selection.professeur.get_full_name|default:selection.professeur.username }} · {{ selection.classe.nom }} · {{ selection.matiere.nom }}{% else %}Les éléments liés apparaîtront ici.{% endif %}</p></div>
+    </div>
+    {% if selection %}
+      <div class="detail-list">
+        <div class="detail-item"><span>Documents</span><strong>{{ selection.documents.count }} support{{ selection.documents.count|pluralize }}</strong></div>
+        <div class="detail-item"><span>Séances actives</span><strong>{{ seances_actives }} séance{{ seances_actives|pluralize }}</strong></div>
+      </div>
+      <h3 class="small-text" style="margin:15px 0 5px;font-weight:700">Documents récents</h3>
+      {% for document in documents_recents %}
+        <div class="field-row">
+          <a class="table-link" href="{% url 'documents:liste' %}?document={{ document.pk }}">{{ document.nom_original }}</a>
+          <span class="muted">{{ document.chapitre|default:"Sans chapitre" }} · {{ document.date_import|date:"d/m/Y" }}</span>
+        </div>
+      {% empty %}<p class="small-text muted">Aucun document associé.</p>{% endfor %}
+      <h3 class="small-text" style="margin:14px 0 5px;font-weight:700">Dernières séances</h3>
+      {% for seance in seances_recentes %}
+        <div class="field-row"><strong>{{ seance.titre }}</strong><span class="muted">{{ seance.date_seance|date:"d/m/Y" }}</span></div>
+      {% empty %}<p class="small-text muted">Aucune séance associée.</p>{% endfor %}
+      <p style="margin:12px 0 0"><a class="table-link" href="{% url 'documents:liste' %}">Voir les documents →</a></p>
+    {% else %}
+      <div class="empty-state">Sélectionnez une affectation pour consulter ses documents et séances.</div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

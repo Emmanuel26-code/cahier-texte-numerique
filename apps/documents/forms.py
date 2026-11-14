@@ -12,8 +12,7 @@ class DocumentForm(forms.ModelForm):
 
     def __init__(self, *args, professeur=None, **kwargs):
         super().__init__(*args, **kwargs)
-        # Un professeur ne peut déposer que dans ses propres affectations.
-        self.fields["affectation"].queryset = (
-            Affectation.objects.filter(professeur=professeur)
-            .select_related("classe", "matiere")
-        )
+        affectations = Affectation.objects.select_related("classe", "matiere", "professeur")
+        if professeur is not None:
+            affectations = affectations.filter(professeur=professeur)
+        self.fields["affectation"].queryset = affectations

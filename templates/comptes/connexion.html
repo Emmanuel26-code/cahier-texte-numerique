@@ -1,4 +1,5 @@
-{% extends "base.html" %}
+<div class="card shadow-sm mx-auto" style="max-width: 28rem;">
+  <div class="card-body">{% extends "base.html" %}
 
 {% block titre %}Connexion{% endblock %}
 
@@ -7,7 +8,9 @@
   <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
-    <button type="submit">Se connecter</button>
+    <button type="submit" class="btn w-100">Se connecter</button>
   </form>
   <p>Pas encore de compte ? <a href="{% url 'inscription' %}">Inscrivez-vous</a></p>
 {% endblock %}
+</div>
+</div>

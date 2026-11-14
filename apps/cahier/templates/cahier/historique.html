@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block titre %}Historique · Cahier de texte{% endblock %}
+{% block fil_ariane %}Historique{% endblock %}
+{% block contenu %}
+<section class="page-heading">
+  <div><h1>Historique des modifications</h1><p>Consultez les anciennes valeurs des séances modifiées ou supprimées.</p></div>
+</section>
+
+<section class="panel">
+  <form method="get" class="filter-form">
+    {% for field in filters %}
+      <div class="form-field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+      </div>
+    {% endfor %}
+    <button class="button" type="submit">Appliquer</button>
+    <a class="button secondary" href="{% url 'cahier:historique' %}">Réinitialiser</a>
+  </form>
+</section>
+
+<section class="panel" style="margin-top:15px">
+  <div class="panel-heading">
+    <div><h2>Journal des séances</h2><p>{{ entrees|length }} action{{ entrees|length|pluralize }} · de la plus récente à la plus ancienne</p></div>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Date de l’action</th><th>Séance</th><th>Auteur</th><th>Action</th><th>Anciennes valeurs</th><th></th></tr></thead>
+      <tbody>
+        {% for entree in entrees %}
+          <tr class="{% if detail.pk == entree.pk %}row-selected{% endif %}">
+            <td>{{ entree.date_action|date:"d/m/Y" }}<br><span class="muted">{{ entree.date_action|date:"H:i" }}</span></td>
+            <td><strong>{{ entree.seance.titre }}</strong><br><span class="muted">{{ entree.seance.affectation.classe.nom }} · {{ entree.seance.affectation.matiere.nom }}</span></td>
+            <td>{{ entree.modifie_par.get_full_name|default:entree.modifie_par.username }}</td>
+            <td><span class="tag">{% if entree.action == "suppression" %}Suppression{% else %}Modification{% endif %}</span></td>
+            <td>{% for cle, valeur in entree.anciennes_valeurs.items %}<span>{{ cle }} : {{ valeur|default:"—" }}{% if not forloop.last %}, {% endif %}</span>{% empty %}<span class="muted">Aucune valeur conservée</span>{% endfor %}</td>
+            <td><a class="table-link" href="?{% if request.GET.seance %}seance={{ request.GET.seance|urlencode }}&amp;{% endif %}{% if request.GET.auteur %}auteur={{ request.GET.auteur|urlencode }}&amp;{% endif %}{% if request.GET.action %}action={{ request.GET.action|urlencode }}&amp;{% endif %}{% if request.GET.date_debut %}date_debut={{ request.GET.date_debut|urlencode }}&amp;{% endif %}{% if request.GET.date_fin %}date_fin={{ request.GET.date_fin|urlencode }}&amp;{% endif %}detail={{ entree.pk }}">Détail</a></td>
+          </tr>
+        {% empty %}<tr><td colspan="6" class="empty-state">Aucune modification ne correspond à cette période.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if detail %}
+  <section class="panel" style="margin-top:15px">
+    <div class="panel-heading">
+      <div><h2>Détail de la modification</h2><p>{{ detail.seance.titre }} · {{ detail.seance.affectation.classe.nom }} · {{ detail.seance.affectation.matiere.nom }}</p></div>
+      <span class="tag">{% if detail.action == "suppression" %}Suppression{% else %}Modification{% endif %}</span>
+    </div>
+    <div class="detail-list" style="margin-bottom:14px">
+      <div class="detail-item"><span>Auteur utilisateur</span><strong>{{ detail.modifie_par.get_full_name|default:detail.modifie_par.username }}</strong></div>
+      <div class="detail-item"><span>Date de l’action</span><strong>{{ detail.date_action|date:"d/m/Y à H:i" }}</strong></div>
+      <div class="detail-item"><span>Séance concernée</span><strong>{{ detail.seance.date_seance|date:"d/m/Y" }} · {{ detail.seance.titre }}</strong></div>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Champ modifié</th><th>Anciennes valeurs</th></tr></thead>
+        <tbody>
+          {% for cle, valeur in detail.anciennes_valeurs.items %}
+            <tr><td><strong>{{ cle|capfirst }}</strong></td><td>{{ valeur|default:"—" }}</td></tr>
+          {% empty %}<tr><td colspan="2" class="empty-state">Aucune ancienne valeur n’est disponible.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="form-actions"><a class="button secondary" href="{% url 'cahier:detail' detail.seance_id %}">→ Consulter la séance</a></div>
+  </section>
+{% endif %}
+<div class="notice" style="margin-top:15px">Chaque entrée de ce journal correspond à une modification ou une suppression enregistrée d’une séance. Les créations ne sont pas historisées par le modèle actuel.</div>
+{% endblock %}
