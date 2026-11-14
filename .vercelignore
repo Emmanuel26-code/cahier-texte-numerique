@@ -8,3 +8,5 @@ staticfiles/
 apps.zip
 installer.bat
 lancer.bat
+.env.production
+.neon

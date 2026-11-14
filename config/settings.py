@@ -16,8 +16,9 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Charge le fichier .env (jamais versionné) s'il existe
-load_dotenv(BASE_DIR / ".env")
+# Charge le fichier .env (jamais versionné) s'il existe. DJANGO_ENV_FILE permet d'en
+# choisir un autre, ex. .env.production pour lancer une commande sur la base Neon.
+load_dotenv(BASE_DIR / os.environ.get("DJANGO_ENV_FILE", ".env"))
 
 
 def env_bool(nom, defaut=False):
@@ -126,6 +127,9 @@ else:
     }
 if DATABASES["default"]["ENGINE"].endswith("mysql"):
     DATABASES["default"].setdefault("OPTIONS", {})["charset"] = "utf8mb4"
+if DATABASES["default"]["ENGINE"].endswith("postgresql"):
+    # Le pooler de Neon (PgBouncer, mode transaction) ne supporte pas les curseurs serveur.
+    DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
 
 
 # --- Cache -----------------------------------------------------------------------------
@@ -166,7 +170,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = DEBUG
 # Sans collectstatic, le dossier staticfiles/ n'existe pas : c'est voulu.
-warnings.filterwarnings("ignore", message="No directory at", module="whitenoise.base")
+warnings.filterwarnings("ignore", message="No directory at: .*staticfiles")
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -179,10 +183,14 @@ if os.environ.get("S3_BUCKET"):
         "BACKEND": "storages.backends.s3.S3Storage",
         "OPTIONS": {
             "bucket_name": os.environ["S3_BUCKET"],
-            "endpoint_url": os.environ.get("S3_ENDPOINT_URL") or None,
-            "access_key": os.environ.get("S3_ACCESS_KEY_ID"),
-            "secret_key": os.environ.get("S3_SECRET_ACCESS_KEY"),
-            "region_name": os.environ.get("S3_REGION") or None,
+            # Noms S3_* (R2, S3…) ou noms AWS standard injectés par Neon (`neon env pull`).
+            "endpoint_url": os.environ.get("S3_ENDPOINT_URL") or os.environ.get("AWS_ENDPOINT_URL_S3") or None,
+            "access_key": os.environ.get("S3_ACCESS_KEY_ID") or os.environ.get("AWS_ACCESS_KEY_ID"),
+            "secret_key": os.environ.get("S3_SECRET_ACCESS_KEY") or os.environ.get("AWS_SECRET_ACCESS_KEY"),
+            "region_name": os.environ.get("S3_REGION") or os.environ.get("AWS_REGION") or None,
+            # Neon Object Storage exige l'adressage « path-style » et SigV4 (R2 et S3 l'acceptent aussi).
+            "addressing_style": "path",
+            "signature_version": "s3v4",
             "default_acl": None,
             "querystring_auth": True,  # liens signés et temporaires : fichiers jamais publics
             "file_overwrite": False,
