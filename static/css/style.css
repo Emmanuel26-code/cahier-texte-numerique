@@ -66,6 +66,10 @@ a:hover { color: var(--forest); text-decoration: underline; text-underline-offse
 button, input, select, textarea { font: inherit; color: inherit; }
 img, svg { display: block; max-width: 100%; }
 [hidden] { display: none !important; }
+.icone { flex: none; display: inline-block; vertical-align: -3px; }
+.nav-icon { display: grid; place-items: center; }
+.form-field input[type="file"] { padding: 10px; font-size: 15px; cursor: pointer; }
+.form-field input[type="file"]::file-selector-button { margin-right: 12px; padding: 8px 14px; border: 0; border-radius: var(--radius-full); color: #fff; background: var(--olive); font: inherit; font-weight: 700; cursor: pointer; }
 h1, h2, h3 { color: var(--ink); letter-spacing: -.02em; line-height: 1.15; }
 :focus-visible { outline: 3px solid rgba(40, 100, 240, .45); outline-offset: 2px; }
 ::selection { background: var(--gold-light); }
@@ -282,12 +286,14 @@ h1, h2, h3 { color: var(--ink); letter-spacing: -.02em; line-height: 1.15; }
 .sidebar-user-name strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
 .sidebar-user-name span { color: var(--muted); font-size: 12px; }
 .sidebar-user form { grid-column: 1 / -1; margin-top: 8px; }
+.actions-compte { display: grid; gap: 6px; }
 .logout-link {
   display: flex;
   width: 100%;
   min-height: 42px;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   padding: 8px;
   border: 1px solid var(--line);
   border-radius: var(--radius-full);
@@ -556,6 +562,10 @@ h1, h2, h3 { color: var(--ink); letter-spacing: -.02em; line-height: 1.15; }
 .choix-role label:has(input:checked) { border-color: var(--olive); background: #fff; box-shadow: 0 0 0 4px rgba(40, 100, 240, .12); }
 .choix-role label:has(input:checked) .pastille-role { color: var(--cream); background: var(--forest); }
 .choix-role label:has(input:focus-visible) { outline: 3px solid rgba(40, 100, 240, .45); outline-offset: 2px; }
+.ligne-options { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: -4px; font-size: 14px; }
+.ligne-options a { font-weight: 700; }
+.case { display: inline-flex; align-items: center; gap: 10px; color: var(--ink-2); font-weight: 600; cursor: pointer; }
+.case input { width: 20px; height: 20px; margin: 0; accent-color: var(--olive); cursor: pointer; }
 .alerte-formulaire { padding: 12px 16px; border: 1px solid #efc9c4; border-radius: 14px; color: var(--danger); background: var(--danger-bg); font-size: 14px; font-weight: 600; }
 .alerte-formulaire ul { margin: 0; padding: 0; list-style: none; }
 .auth-bas { margin: 24px 0 0; color: var(--muted); text-align: center; font-size: 15px; }
@@ -611,7 +621,7 @@ ul.liste a { color: var(--ink); }
 }
 @media (max-width: 900px) {
   .auth { grid-template-columns: 1fr; }
-  .auth-visuel { gap: 18px; padding: max(20px, env(safe-area-inset-top)) 20px 26px; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+  .auth-visuel { justify-content: flex-start; gap: 18px; padding: max(20px, env(safe-area-inset-top)) 20px 26px; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
   .auth-visuel::after { display: none; }
   .auth-accroche h2 { font-size: 26px; margin-bottom: 6px; }
   .auth-accroche p { font-size: 14px; }

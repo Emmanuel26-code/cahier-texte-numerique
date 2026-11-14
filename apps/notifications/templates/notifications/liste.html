@@ -3,7 +3,7 @@
 {% block contenu %}
 <div>
   <h1>Notifications</h1>
-  <p class="discret"><a href="{% url 'tableau_de_bord:eleve' %}">← Retour au tableau de bord</a></p>
+  <p class="discret"><a href="{% url 'tableau_de_bord:eleve' %}">Retour au tableau de bord</a></p>
 </div>
 <section class="carte" aria-labelledby="titre-notifs">
   <h2 id="titre-notifs">{% if nb_non_lues %}{{ nb_non_lues }} non lue{{ nb_non_lues|pluralize }}{% else %}Tout est lu{% endif %}</h2>

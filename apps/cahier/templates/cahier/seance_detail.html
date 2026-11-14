@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% load interface %}
 {% block titre %}{{ seance.titre }} · Cahier de texte{% endblock %}
 {% block fil_ariane %}<a href="{% url 'cahier:liste' %}">Cahier de texte</a> / Séance{% endblock %}
 {% block contenu %}
 <section class="page-heading">
   <div><h1>{{ seance.titre }}</h1><p>{{ seance.affectation.classe.nom }} · {{ seance.affectation.matiere.nom }} · {{ seance.date_seance|date:"l j F Y" }}</p></div>
   <div class="form-actions" style="margin:0">
-    <a class="button secondary" href="{% url 'cahier:liste' %}">← Retour aux séances</a>
+    <a class="button secondary" href="{% url 'cahier:liste' %}">{% icone "retour" %} Retour aux séances</a>
     {% if peut_modifier %}
       <a class="button" href="{% url 'cahier:modifier' seance.pk %}">Modifier</a>
       <form method="post" action="{% url 'cahier:supprimer' seance.pk %}" onsubmit="return confirm('Supprimer cette séance ? Elle restera visible dans l’historique.');">

@@ -1,4 +1,5 @@
 {% extends "comptes/_auth.html" %}
+{% load interface %}
 {% block titre %}Créer un compte · Cahier de texte numérique{% endblock %}
 {% block accroche %}Rejoignez votre <em>classe.</em>{% endblock %}
 {% block accroche_texte %}Créez votre compte en une minute. L’administration vous rattache ensuite à vos classes.{% endblock %}
@@ -15,7 +16,7 @@
       {% for choix in form.role %}
         <label for="{{ choix.id_for_label }}">
           {{ choix.tag }}
-          <span class="pastille-role" aria-hidden="true">{% if choix.data.value == "professeur" %}✎{% else %}◉{% endif %}</span>
+          <span class="pastille-role" aria-hidden="true">{% if choix.data.value == "professeur" %}{% icone "crayon" %}{% else %}{% icone "eleve" %}{% endif %}</span>
           {{ choix.choice_label }}
         </label>
       {% endfor %}

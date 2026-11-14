@@ -1,11 +1,12 @@
 {% extends "tableau_de_bord/base.html" %}
+{% load interface %}
 {% block titre %}Tableau de bord – Administration{% endblock %}
 {% block entete %}
   <h1>Administration</h1>
   <p class="discret">Vue d’ensemble de l’établissement{% if annee_scolaire_courante %} · {{ annee_scolaire_courante.libelle }}{% endif %}</p>
 {% endblock %}
 {% block cloche %}
-  <a class="button" href="{% url 'academique:affectations' %}?nouveau=1">＋ Affectation</a>
+  <a class="button" href="{% url 'academique:affectations' %}?nouveau=1">{% icone "plus" %} Affectation</a>
   <a class="button secondary" href="{% url 'utilisateurs' %}">Utilisateurs</a>
 {% endblock %}
 {% block tableau %}
@@ -45,7 +46,7 @@
         <div class="discret">{{ h.seance.affectation.classe.nom }} · par {{ h.modifie_par.get_full_name|default:h.modifie_par.username }} · {{ h.date_action|date:"j F à H:i" }}</div></li>
       {% endfor %}
     </ul>
-    <p style="margin:10px 0 0"><a href="{% url 'cahier:historique' %}">Tout l’historique →</a></p>
+    <p style="margin:10px 0 0"><a href="{% url 'cahier:historique' %}">Tout l’historique</a></p>
     {% else %}<p class="discret">Aucune modification enregistrée.</p>{% endif %}
   </section>
 </div>

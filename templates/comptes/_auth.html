@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load interface %}
 {% comment %}Gabarit commun des pages de connexion et d'inscription.{% endcomment %}
 {% block page_publique %}
 <div class="auth">
@@ -9,9 +10,9 @@
       <p>{% block accroche_texte %}Séances, travail à faire et plans de cours de toute la classe, au même endroit.{% endblock %}</p>
     </div>
     <ul class="auth-points">
-      <li><span aria-hidden="true">✎</span> Les professeurs saisissent leurs séances en quelques secondes</li>
-      <li><span aria-hidden="true">✦</span> L’IA propose un plan de cours, le professeur le valide</li>
-      <li><span aria-hidden="true">◉</span> Les élèves sont prévenus du travail à faire</li>
+      <li><span>{% icone "crayon" %}</span> Les professeurs saisissent leurs séances en quelques secondes</li>
+      <li><span>{% icone "etincelle" %}</span> L’IA propose un plan de cours, le professeur le valide</li>
+      <li><span>{% icone "cloche" %}</span> Les élèves sont prévenus du travail à faire</li>
     </ul>
   </section>
   <main class="auth-formulaire" id="contenu">

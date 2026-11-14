@@ -1,14 +1,33 @@
 {% extends "base.html" %}
-
-{% block titre %}Importer un document{% endblock %}
-
+{% load interface %}
+{% block titre %}Importer un cours · Cahier de texte{% endblock %}
+{% block fil_ariane %}<a href="{% url 'documents:liste' %}">Cours et plans</a> / Importer{% endblock %}
 {% block contenu %}
-  <h1>Importer un document de cours</h1>
-  <p class="aide">Formats acceptés : PDF, DOCX, PPTX, XLSX et TXT. Taille maximale : {{ taille_max|filesizeformat }}.</p>
-  <form method="post" enctype="multipart/form-data">
+<section class="page-heading">
+  <div>
+    <h1>Importer un cours</h1>
+    <p>Ajoutez un support de cours ; l’IA pourra ensuite vous proposer un plan.</p>
+  </div>
+  <a class="button secondary" href="{% url 'documents:liste' %}">{% icone "retour" %} Mes documents</a>
+</section>
+
+<section class="panel" style="max-width:640px">
+  <form method="post" enctype="multipart/form-data" class="form-grid" data-chargement>
     {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Importer</button>
+    {% for field in form %}
+      <div class="form-field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="form-help">{{ field.help_text }}</div>{% endif %}
+        {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+      </div>
+    {% endfor %}
+    {% if form.non_field_errors %}<ul class="errorlist">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+    <div class="notice">Formats acceptés : PDF, DOCX, PPTX, XLSX et TXT. Taille maximale : {{ taille_max|taille }}.</div>
+    <div class="form-actions">
+      <button class="button" type="submit">{% icone "envoi" %} Importer</button>
+      <a class="button secondary" href="{% url 'documents:liste' %}">Annuler</a>
+    </div>
   </form>
-  <p><a href="{% url 'documents:liste' %}">Voir les documents importés</a></p>
+</section>
 {% endblock %}
