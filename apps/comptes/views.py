@@ -1,12 +1,26 @@
-from django.contrib.auth import login
+import logging
+
+from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import login
+from django.contrib.auth import views as auth_views
+from django.core.cache import cache
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse_lazy
 
 from apps.academique.models import Classe
-from .forms import GestionUtilisateurForm, InscriptionForm
+from .forms import (
+    ConnexionForm,
+    DemandeReinitialisationForm,
+    GestionUtilisateurForm,
+    InscriptionForm,
+    NouveauMotDePasseForm,
+)
 from .models import Utilisateur
 from .permissions import role_requis
+
+logger = logging.getLogger(__name__)
 
 
 @role_requis(Utilisateur.Role.ADMINISTRATEUR)
@@ -82,3 +96,77 @@ def inscription(request):
         form = InscriptionForm()
 
     return render(request, "comptes/inscription.html", {"form": form})
+
+# --- Connexion avec « Rester connecté » --------------------------------------------------
+
+class Connexion(auth_views.LoginView):
+    template_name = "comptes/connexion.html"
+    authentication_form = ConnexionForm
+    redirect_authenticated_user = True
+
+    def form_valid(self, form):
+        reponse = super().form_valid(form)
+        if form.cleaned_data.get("rester_connecte"):
+            self.request.session.set_expiry(settings.SESSION_COOKIE_AGE)  # 60 jours
+        else:
+            self.request.session.set_expiry(0)  # jusqu'à la fermeture du navigateur
+        return reponse
+
+
+# --- Mot de passe oublié -------------------------------------------------------------------
+
+LIMITE_DEMANDES_PAR_HEURE = 5
+
+
+def _trop_de_demandes(request, email):
+    """Limite les envois (par adresse IP et par e-mail) pour éviter les abus."""
+    ip = (request.META.get("HTTP_X_FORWARDED_FOR") or request.META.get("REMOTE_ADDR") or "?").split(",")[0].strip()
+    depasse = False
+    for cle in (f"reinit-ip-{ip}", f"reinit-email-{email.lower()}"):
+        cache.add(cle, 0, timeout=3600)
+        try:
+            n = cache.incr(cle)
+        except ValueError:
+            cache.set(cle, 1, timeout=3600)
+            n = 1
+        depasse = depasse or n > LIMITE_DEMANDES_PAR_HEURE
+    return depasse
+
+
+class MotDePasseOublie(auth_views.PasswordResetView):
+    template_name = "comptes/mot_de_passe_oublie.html"
+    form_class = DemandeReinitialisationForm
+    email_template_name = "comptes/emails/reinitialisation.txt"
+    html_email_template_name = "comptes/emails/reinitialisation.html"
+    subject_template_name = "comptes/emails/reinitialisation_sujet.txt"
+    success_url = reverse_lazy("password_reset_done")
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        contexte["email_configure"] = settings.EMAIL_CONFIGURE or settings.DEBUG
+        return contexte
+
+    def form_valid(self, form):
+        if _trop_de_demandes(self.request, form.cleaned_data["email"]):
+            form.add_error(None, "Trop de demandes en peu de temps. Réessayez dans une heure.")
+            return self.form_invalid(form)
+        try:
+            return super().form_valid(form)
+        except Exception:  # serveur d'e-mail injoignable : on le dit sans révéler de détail
+            logger.exception("Envoi de l'e-mail de réinitialisation impossible")
+            form.add_error(None, "L’e-mail n’a pas pu être envoyé pour le moment. Réessayez plus tard.")
+            return self.form_invalid(form)
+
+
+class MotDePasseOublieEnvoye(auth_views.PasswordResetDoneView):
+    template_name = "comptes/mot_de_passe_envoye.html"
+
+
+class NouveauMotDePasse(auth_views.PasswordResetConfirmView):
+    template_name = "comptes/nouveau_mot_de_passe.html"
+    form_class = NouveauMotDePasseForm
+    success_url = reverse_lazy("password_reset_complete")
+
+
+class MotDePasseModifie(auth_views.PasswordResetCompleteView):
+    template_name = "comptes/mot_de_passe_modifie.html"

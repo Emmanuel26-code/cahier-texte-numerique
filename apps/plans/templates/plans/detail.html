@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load interface %}
 {% block titre %}Plan de cours · {{ plan.titre }}{% endblock %}
 {% block fil_ariane %}Plan de cours{% endblock %}
 {% block contenu %}
@@ -10,8 +11,8 @@
   </div>
   <div class="form-actions" style="margin:0">
     <span class="tag {% if plan.statut == 'valide' %}success{% endif %}">{{ plan.get_statut_display }}</span>
-    {% if peut_gerer %}<a class="button secondary" href="{% url 'documents:liste' %}?document={{ plan.document_id }}">← Document</a>
-    {% else %}<a class="button secondary" href="{% url 'tableau_de_bord:accueil' %}">← Tableau de bord</a>{% endif %}
+    {% if peut_gerer %}<a class="button secondary" href="{% url 'documents:liste' %}?document={{ plan.document_id }}">{% icone "retour" %} Document</a>
+    {% else %}<a class="button secondary" href="{% url 'tableau_de_bord:accueil' %}">{% icone "retour" %} Tableau de bord</a>{% endif %}
   </div>
 </section>
 
@@ -41,7 +42,7 @@
       {% endfor %}
       <div class="notice">Retirer un point retire aussi ses sous-points. Une fois validé, le plan est visible par les élèves et ses points peuvent être rattachés aux séances.</div>
       <div class="form-actions">
-        <button class="button" type="submit" name="action" value="valider">✓ Valider le plan</button>
+        <button class="button" type="submit" name="action" value="valider">{% icone "valider" %} Valider le plan</button>
         <button class="button secondary" type="submit" name="action" value="enregistrer">Enregistrer sans valider</button>
         <button class="button secondary" type="submit" name="action" value="rejeter" onclick="return confirm('Rejeter ce plan ?');">Rejeter</button>
       </div>

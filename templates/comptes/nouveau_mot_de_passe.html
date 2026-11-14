@@ -1,0 +1,24 @@
+{% extends "comptes/_auth.html" %}
+{% block titre %}Nouveau mot de passe · Cahier de texte numérique{% endblock %}
+{% block accroche %}Un nouveau départ, <em>en sécurité.</em>{% endblock %}
+{% block accroche_texte %}Choisissez un mot de passe que vous n’utilisez pas ailleurs.{% endblock %}
+{% block formulaire %}
+  {% if validlink %}
+    <h1>Nouveau mot de passe</h1>
+    <p class="sous-titre">Saisissez votre nouveau mot de passe deux fois.</p>
+    <form method="post" novalidate data-chargement>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="alerte-formulaire" role="alert"><ul>{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul></div>
+      {% endif %}
+      {% include "partials/champ.html" with champ=form.new_password1 mdp=True %}
+      {% include "partials/champ.html" with champ=form.new_password2 mdp=True %}
+      <button class="button block" type="submit">Enregistrer le mot de passe</button>
+    </form>
+  {% else %}
+    <h1>Lien expiré</h1>
+    <p class="sous-titre">Ce lien de réinitialisation n’est plus valable : il a déjà servi ou il a plus de 2 heures.</p>
+    <a class="button block" href="{% url 'password_reset' %}">Demander un nouveau lien</a>
+  {% endif %}
+  <p class="auth-bas"><a href="{% url 'login' %}">Retour à la connexion</a></p>
+{% endblock %}
