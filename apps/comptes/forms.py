@@ -75,14 +75,35 @@ class GestionUtilisateurForm(forms.ModelForm):
     class Meta:
         model = Utilisateur
         fields = (
-            "first_name", "last_name", "email", "role",
+            "email", "first_name", "last_name", "role",
             "is_active", "classes",
         )
+        labels = {
+            "email": "Adresse e-mail (identifiant de connexion)",
+            "first_name": "Prénom",
+            "last_name": "Nom",
+            "role": "Rôle",
+            "is_active": "Compte actif",
+        }
+        help_texts = {"is_active": "Décochez pour bloquer la connexion sans supprimer le compte."}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["email"].widget.attrs.update({"autocomplete": "off", "inputmode": "email", "autocapitalize": "none"})
+        self.fields["mot_de_passe"].widget.attrs["autocomplete"] = "new-password"
+        if self.instance.pk:
+            self.fields["mot_de_passe"].help_text = "Laissez vide pour conserver le mot de passe actuel."
         if self.instance.pk and self.instance.est_eleve:
             self.fields["classes"].initial = self.instance.classes_suivies.all()
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip().lower()
+        doublons = Utilisateur.objects.filter(email__iexact=email)
+        if self.instance.pk:
+            doublons = doublons.exclude(pk=self.instance.pk)
+        if doublons.exists():
+            raise forms.ValidationError("Un compte existe déjà avec cette adresse e-mail.")
+        return email
 
     def clean_mot_de_passe(self):
         password = self.cleaned_data.get("mot_de_passe")
