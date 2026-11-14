@@ -4,7 +4,15 @@
 {% block contenu %}
 <section class="page-heading">
   <div><h1>{{ seance.titre }}</h1><p>{{ seance.affectation.classe.nom }} · {{ seance.affectation.matiere.nom }} · {{ seance.date_seance|date:"l j F Y" }}</p></div>
-  <a class="button secondary" href="{% url 'cahier:liste' %}">← Retour aux séances</a>
+  <div class="form-actions" style="margin:0">
+    <a class="button secondary" href="{% url 'cahier:liste' %}">← Retour aux séances</a>
+    {% if peut_modifier %}
+      <a class="button" href="{% url 'cahier:modifier' seance.pk %}">Modifier</a>
+      <form method="post" action="{% url 'cahier:supprimer' seance.pk %}" onsubmit="return confirm('Supprimer cette séance ? Elle restera visible dans l’historique.');">
+        {% csrf_token %}<button class="button secondary" type="submit">Supprimer</button>
+      </form>
+    {% endif %}
+  </div>
 </section>
 <div class="management-grid equal">
   <section class="panel">
