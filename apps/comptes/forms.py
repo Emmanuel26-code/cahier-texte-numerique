@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, SetPasswordForm, UserCreationForm
 from django.contrib.auth.password_validation import validate_password
 
 from apps.academique.models import Classe, Inscription
@@ -56,6 +56,31 @@ class ConnexionForm(AuthenticationForm):
             "autocapitalize": "none", "spellcheck": "false",
         })
         self.fields["password"].widget.attrs["autocomplete"] = "current-password"
+
+
+    rester_connecte = forms.BooleanField(label="Rester connecté", required=False, initial=True)
+
+
+class DemandeReinitialisationForm(PasswordResetForm):
+    """Demande de lien de réinitialisation (on ne révèle jamais si l'adresse existe)."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["email"].label = "Adresse e-mail du compte"
+        self.fields["email"].widget.attrs.update({
+            "autocomplete": "email", "inputmode": "email", "autocapitalize": "none", "spellcheck": "false",
+        })
+
+
+class NouveauMotDePasseForm(SetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["new_password1"].label = "Nouveau mot de passe"
+        self.fields["new_password1"].help_text = "8 caractères minimum, pas uniquement des chiffres."
+        self.fields["new_password1"].widget.attrs["autocomplete"] = "new-password"
+        self.fields["new_password2"].label = "Confirmer le nouveau mot de passe"
+        self.fields["new_password2"].help_text = ""
+        self.fields["new_password2"].widget.attrs["autocomplete"] = "new-password"
 
 
 class GestionUtilisateurForm(forms.ModelForm):

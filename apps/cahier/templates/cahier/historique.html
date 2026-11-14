@@ -50,7 +50,7 @@
       <span class="tag">{% if detail.action == "suppression" %}Suppression{% else %}Modification{% endif %}</span>
     </div>
     <div class="detail-list" style="margin-bottom:14px">
-      <div class="detail-item"><span>Auteur utilisateur</span><strong>{{ detail.modifie_par.get_full_name|default:detail.modifie_par.username }}</strong></div>
+      <div class="detail-item"><span>Auteur</span><strong>{{ detail.modifie_par.get_full_name|default:detail.modifie_par.username }}</strong></div>
       <div class="detail-item"><span>Date de l’action</span><strong>{{ detail.date_action|date:"d/m/Y à H:i" }}</strong></div>
       <div class="detail-item"><span>Séance concernée</span><strong>{{ detail.seance.date_seance|date:"d/m/Y" }} · {{ detail.seance.titre }}</strong></div>
     </div>
@@ -64,7 +64,7 @@
         </tbody>
       </table>
     </div>
-    <div class="form-actions"><a class="button secondary" href="{% url 'cahier:detail' detail.seance_id %}">→ Consulter la séance</a></div>
+    <div class="form-actions"><a class="button secondary" href="{% url 'cahier:detail' detail.seance_id %}">Consulter la séance</a></div>
   </section>
 {% endif %}
 <div class="notice" style="margin-top:15px">Chaque entrée de ce journal correspond à une modification ou une suppression enregistrée d’une séance. Les créations ne sont pas historisées par le modèle actuel.</div>

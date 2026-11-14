@@ -1,12 +1,13 @@
 {% extends "tableau_de_bord/base.html" %}
+{% load interface %}
 {% block titre %}Tableau de bord – Professeur{% endblock %}
 {% block entete %}
   <h1>Bonjour, {{ request.user.first_name|default:request.user.username }}</h1>
   <p class="discret">{{ affectations|length }} classe{{ affectations|length|pluralize }} · {{ nb_seances_mois }} séance{{ nb_seances_mois|pluralize }} ce mois-ci</p>
 {% endblock %}
 {% block cloche %}
-  <a class="button" href="{% url 'cahier:creer' %}">＋ Nouvelle séance</a>
-  <a class="button secondary" href="{% url 'documents:importer' %}">↑ Importer un cours</a>
+  <a class="button" href="{% url 'cahier:creer' %}">{% icone "plus" %} Nouvelle séance</a>
+  <a class="button secondary" href="{% url 'documents:importer' %}">{% icone "envoi" %} Importer un cours</a>
 {% endblock %}
 {% block tableau %}
 {% if plans_a_valider %}

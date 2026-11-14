@@ -9,6 +9,7 @@ class DocumentForm(forms.ModelForm):
     class Meta:
         model = Document
         fields = ("affectation", "fichier", "chapitre")
+        labels = {"affectation": "Classe et matière", "fichier": "Fichier du cours", "chapitre": "Chapitre (facultatif)"}
 
     def __init__(self, *args, professeur=None, **kwargs):
         super().__init__(*args, **kwargs)

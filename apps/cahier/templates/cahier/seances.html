@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% load interface %}
 {% block titre %}Cahier de texte{% endblock %}
 {% block fil_ariane %}Cahier de texte{% endblock %}
 {% block contenu %}
 <section class="page-heading">
   <div><h1>Cahier de texte</h1><p>Retrouvez les séances et le travail donné pour vos classes.</p></div>
-  {% if user.est_professeur or user.est_administrateur %}<a class="button" href="{% url 'cahier:creer' %}">＋ Nouvelle séance</a>{% endif %}
+  {% if user.est_professeur or user.est_administrateur %}<a class="button" href="{% url 'cahier:creer' %}">{% icone "plus" %} Nouvelle séance</a>{% endif %}
 </section>
 <section class="panel">
   <div class="panel-heading"><div><h2>Séances</h2><p>{{ seances|length }} séance{{ seances|length|pluralize }}</p></div></div>

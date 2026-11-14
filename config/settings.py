@@ -209,6 +209,33 @@ DOCUMENT_MAX_OCTETS = int(os.environ.get("DOCUMENT_MAX_OCTETS", str(10 * 1024 * 
 FILE_UPLOAD_MAX_MEMORY_SIZE = DOCUMENT_MAX_OCTETS
 
 
+# --- Sessions : rester connecté ----------------------------------------------------------
+# Avec « Rester connecté » (coché par défaut), la session dure 60 jours ; sinon elle
+# se termine à la fermeture du navigateur (voir apps.comptes.views.Connexion).
+SESSION_COOKIE_AGE = 60 * 24 * 3600
+SESSION_COOKIE_SAMESITE = "Lax"
+
+
+# --- E-mails (réinitialisation du mot de passe) ------------------------------------------
+# Production : un serveur SMTP (Gmail avec mot de passe d'application, Brevo, Resend…).
+# Sans EMAIL_HOST, les e-mails sont affichés dans la console (développement) et la page
+# « Mot de passe oublié » indique que l'envoi n'est pas disponible.
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_CONFIGURE = bool(EMAIL_HOST)
+if EMAIL_CONFIGURE:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+    EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+    EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+    EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", EMAIL_PORT == 587)
+    EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", EMAIL_PORT == 465)
+    EMAIL_TIMEOUT = 15
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Cahier de texte numérique <no-reply@cahier-texte.local>")
+PASSWORD_RESET_TIMEOUT = 2 * 3600  # le lien de réinitialisation est valable 2 heures
+
+
 # --- HTTPS (production) ----------------------------------------------------------------
 if not DEBUG:
     SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", True)

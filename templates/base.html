@@ -1,4 +1,4 @@
-{% load static %}<!doctype html>
+{% load static interface %}<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -27,38 +27,38 @@
       </div>
       <nav class="side-nav" aria-label="Navigation principale">
         <a href="{% url 'tableau_de_bord:accueil' %}" class="{% if request.resolver_match.namespace == 'tableau_de_bord' %}active{% endif %}">
-          <span class="nav-icon" aria-hidden="true">▦</span> Tableau de bord
+          <span class="nav-icon">{% icone "accueil" %}</span> Tableau de bord
         </a>
         <a href="{% url 'cahier:liste' %}" class="{% if request.resolver_match.namespace == 'cahier' and request.resolver_match.url_name != 'historique' and request.resolver_match.url_name != 'creer' %}active{% endif %}">
-          <span class="nav-icon" aria-hidden="true">▤</span> Cahier de texte
+          <span class="nav-icon">{% icone "cahier" %}</span> Cahier de texte
         </a>
         {% if user.est_eleve %}
           <a href="{% url 'notifications:liste' %}" class="{% if request.resolver_match.namespace == 'notifications' %}active{% endif %}">
-            <span class="nav-icon" aria-hidden="true">◉</span> Notifications
+            <span class="nav-icon">{% icone "cloche" %}</span> Notifications
           </a>
         {% endif %}
         {% if user.est_professeur %}
           <a href="{% url 'cahier:creer' %}" class="{% if request.resolver_match.url_name == 'creer' %}active{% endif %}">
-            <span class="nav-icon" aria-hidden="true">＋</span> Nouvelle séance
+            <span class="nav-icon">{% icone "plus" %}</span> Nouvelle séance
           </a>
         {% endif %}
         {% if user.est_professeur or user.est_administrateur %}
           <a href="{% url 'documents:liste' %}" class="{% if request.resolver_match.namespace == 'documents' or request.resolver_match.namespace == 'plans' %}active{% endif %}">
-            <span class="nav-icon" aria-hidden="true">▧</span> Cours et plans
+            <span class="nav-icon">{% icone "documents" %}</span> Cours et plans
           </a>
         {% endif %}
         {% if user.est_administrateur %}
           <a href="{% url 'academique:affectations' %}" class="{% if request.resolver_match.url_name == 'affectations' %}active{% endif %}">
-            <span class="nav-icon" aria-hidden="true">⌁</span> Affectations
+            <span class="nav-icon">{% icone "affectations" %}</span> Affectations
           </a>
           <a href="{% url 'utilisateurs' %}" class="{% if request.resolver_match.url_name == 'utilisateurs' %}active{% endif %}">
-            <span class="nav-icon" aria-hidden="true">♧</span> Utilisateurs
+            <span class="nav-icon">{% icone "utilisateurs" %}</span> Utilisateurs
           </a>
           <a href="{% url 'academique:referentiels' %}" class="{% if request.resolver_match.url_name == 'referentiels' %}active{% endif %}">
-            <span class="nav-icon" aria-hidden="true">◫</span> Référentiels
+            <span class="nav-icon">{% icone "referentiels" %}</span> Référentiels
           </a>
           <a href="{% url 'cahier:historique' %}" class="{% if request.resolver_match.url_name == 'historique' %}active{% endif %}">
-            <span class="nav-icon" aria-hidden="true">◷</span> Historique
+            <span class="nav-icon">{% icone "historique" %}</span> Historique
           </a>
         {% endif %}
       </nav>
@@ -68,9 +68,10 @@
           <strong>{{ user.get_full_name|default:user.email }}</strong>
           <span>{{ user.get_role_display }}</span>
         </div>
-        <form method="post" action="{% url 'logout' %}">
+        <form method="post" action="{% url 'logout' %}" class="actions-compte">
           {% csrf_token %}
-          <button class="logout-link" type="submit">Se déconnecter</button>
+          <button class="logout-link" type="submit" name="next" value="{% url 'login' %}">{% icone "echange" 16 %} Changer de compte</button>
+          <button class="logout-link" type="submit">{% icone "sortie" 16 %} Se déconnecter</button>
         </form>
       </div>
     </aside>

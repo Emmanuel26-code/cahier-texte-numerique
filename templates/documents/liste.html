@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% load interface %}
 {% block titre %}Documents · Cahier de texte{% endblock %}
 {% block fil_ariane %}Documents{% endblock %}
 {% block contenu %}
 <section class="page-heading">
   <div><h1>Documents</h1><p>Centralisez les supports de cours et les plans associés.</p></div>
-  <a class="button" href="#importer">↑ Importer un document</a>
+  <a class="button" href="#importer">{% icone "envoi" %} Importer un document</a>
 </section>
 
 <section class="panel">
@@ -27,7 +28,7 @@
             <td>{{ document.affectation.professeur.get_full_name|default:document.affectation.professeur.username }}<br><span class="muted">{{ document.affectation.classe.nom }} · {{ document.affectation.matiere.nom }}</span></td>
             <td>{{ document.chapitre|default:"—" }}</td>
             <td>{% if document.type_mime == "application/pdf" %}PDF{% elif document.type_mime == "text/plain" %}TXT{% elif document.type_mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" %}DOCX{% elif document.type_mime == "application/vnd.openxmlformats-officedocument.presentationml.presentation" %}PPTX{% elif document.type_mime == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" %}XLSX{% else %}Fichier{% endif %}</td>
-            <td>{{ document.taille_octets|filesizeformat }}</td>
+            <td>{{ document.taille_octets|taille }}</td>
             <td>{{ document.date_import|date:"d/m/Y" }}</td>
             <td><a class="table-link" href="{% url 'documents:liste' %}?document={{ document.pk }}">Détail</a></td>
           </tr>
@@ -44,17 +45,17 @@
     </div>
     {% if selection %}
       <div class="document-preview">
-        <strong>▤ Support de cours et exercices</strong>
-        <span class="small-text muted">{{ selection.type_mime }} · {{ selection.taille_octets|filesizeformat }} · importé le {{ selection.date_import|date:"d/m/Y à H:i" }}</span>
+        <strong>{% icone "documents" %} Support de cours</strong>
+        <span class="small-text muted">{{ selection.type_mime }} · {{ selection.taille_octets|taille }} · importé le {{ selection.date_import|date:"d/m/Y à H:i" }}</span>
       </div>
       <div class="detail-list">
         <div class="detail-item"><span>Affectation</span><strong>{{ selection.affectation.professeur.get_full_name|default:selection.affectation.professeur.username }} · {{ selection.affectation.classe.nom }} · {{ selection.affectation.matiere.nom }}</strong></div>
         <div class="detail-item"><span>Chapitre</span><strong>{{ selection.chapitre|default:"Non renseigné" }}</strong></div>
       </div>
       <div class="form-actions">
-        <a class="button secondary" href="{% url 'documents:telecharger' selection.pk %}">↓ Télécharger</a>
+        <a class="button secondary" href="{% url 'documents:telecharger' selection.pk %}">{% icone "telecharger" %} Télécharger</a>
         {% if user.est_administrateur or selection.affectation.professeur_id == user.id %}
-          <button type="button" class="button" data-generer data-url="{% url 'plans:generer_plan' selection.pk %}">☷ Générer un plan</button>
+          <button type="button" class="button" data-generer data-url="{% url 'plans:generer_plan' selection.pk %}">{% icone "plan" %} Générer un plan</button>
         {% endif %}
       </div>
       <div data-zone-plan aria-live="polite"></div>
@@ -84,8 +85,8 @@
         </div>
       {% endfor %}
       {% if form.non_field_errors %}<ul class="errorlist">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
-      <div class="notice">Formats acceptés : PDF, DOCX, PPTX, XLSX et TXT. Taille maximale : {{ taille_max|filesizeformat }}.</div>
-      <div class="form-actions"><button class="button" type="submit">↑ Importer</button><a class="button secondary" href="{% url 'documents:liste' %}">Annuler</a></div>
+      <div class="notice">Formats acceptés : PDF, DOCX, PPTX, XLSX et TXT. Taille maximale : {{ taille_max|taille }}.</div>
+      <div class="form-actions"><button class="button" type="submit">{% icone "envoi" %} Importer</button><a class="button secondary" href="{% url 'documents:liste' %}">Annuler</a></div>
     </form>
   </section>
 </div>
@@ -107,6 +108,7 @@
 
   var button = document.querySelector("[data-generer]");
   if (!button) return;
+  var libelleInitial = button.innerHTML;
   var csrf = "{{ csrf_token }}";
   button.addEventListener("click", function () {
     var zone = document.querySelector("[data-zone-plan]");
@@ -127,7 +129,7 @@
             var lien = document.createElement("a");
             lien.className = "button";
             lien.href = data.url;
-            lien.textContent = "Relire, corriger et valider ce plan →";
+            lien.textContent = "Relire, corriger et valider ce plan";
             result.appendChild(lien);
           }
           zone.appendChild(result);
@@ -141,7 +143,7 @@
       })
       .finally(function () {
         button.disabled = false;
-        button.textContent = "☷ Générer un plan";
+        button.innerHTML = libelleInitial;
       });
   });
 })();

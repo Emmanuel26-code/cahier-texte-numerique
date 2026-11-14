@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load interface %}
 {% block titre %}{% if seance %}Modifier la séance{% else %}Nouvelle séance{% endif %} · Cahier de texte{% endblock %}
 {% block fil_ariane %}<a href="{% url 'cahier:liste' %}">Cahier de texte</a> / {% if seance %}Modifier{% else %}Nouvelle séance{% endif %}{% endblock %}
 {% block contenu %}
@@ -7,7 +8,7 @@
     <h1>{% if seance %}Modifier la séance{% else %}Nouvelle séance{% endif %}</h1>
     <p>{% if seance %}L’ancienne version sera conservée dans l’historique.{% else %}Renseignez le contenu traité et le travail à faire.{% endif %}</p>
   </div>
-  <a class="button secondary" href="{% if seance %}{% url 'cahier:detail' seance.pk %}{% else %}{% url 'cahier:liste' %}{% endif %}">← Retour</a>
+  <a class="button secondary" href="{% if seance %}{% url 'cahier:detail' seance.pk %}{% else %}{% url 'cahier:liste' %}{% endif %}">{% icone "retour" %} Retour</a>
 </section>
 
 <section class="panel">

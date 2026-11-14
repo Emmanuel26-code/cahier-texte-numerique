@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% load interface %}
 {% block titre %}Utilisateurs · Cahier de texte{% endblock %}
 {% block fil_ariane %}Utilisateurs{% endblock %}
 {% block contenu %}
 <section class="page-heading">
   <div><h1>Utilisateurs</h1><p>Gérez les profils, les rôles et les inscriptions aux classes.</p></div>
-  <a class="button" href="{% url 'utilisateurs' %}?nouveau=1">＋ Nouvel utilisateur</a>
+  <a class="button" href="{% url 'utilisateurs' %}?nouveau=1">{% icone "plus" %} Nouvel utilisateur</a>
 </section>
 
 <section class="panel">
@@ -71,7 +72,7 @@
         {% for affectation in selection.affectations.all %}
           <div class="field-row"><strong>{{ affectation.classe.nom }}</strong><span>{{ affectation.matiere.nom }} · <a class="table-link" href="{% url 'academique:affectations' %}?modifier={{ affectation.pk }}">Consulter</a></span></div>
         {% empty %}<p class="small-text muted">Aucune affectation pour le moment.</p>{% endfor %}
-        <p style="margin:12px 0 0"><a class="table-link" href="{% url 'academique:affectations' %}">Gérer les affectations →</a></p>
+        <p style="margin:12px 0 0"><a class="table-link" href="{% url 'academique:affectations' %}">Gérer les affectations</a></p>
       {% else %}
         <p class="small-text muted">{% if selection %}Ce profil n’est pas un enseignant.{% else %}Sélectionnez un enseignant pour consulter ses affectations.{% endif %}</p>
       {% endif %}

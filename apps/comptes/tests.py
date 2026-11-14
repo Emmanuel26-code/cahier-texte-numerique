@@ -1,3 +1,4 @@
+import re
 import datetime
 
 from apps.academique.models import AnneeScolaire, Classe
@@ -190,3 +191,85 @@ class GestionUtilisateursEmailTests(TestCase):
         eleve.refresh_from_db()
         self.assertEqual(eleve.last_name, "Yao")
         self.assertTrue(eleve.check_password("x" * 12))  # mot de passe conservé
+
+
+from django.core import mail  # noqa: E402
+from django.core.cache import cache  # noqa: E402
+from django.test import override_settings  # noqa: E402
+
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend", EMAIL_CONFIGURE=True)
+class MotDePasseOublieTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.compte = Utilisateur.objects.create_user(
+            email="awa@ecole.ci", password="Ancien-MotDePasse-2026", first_name="Awa")
+
+    def demander(self, email="awa@ecole.ci"):
+        return self.client.post("/comptes/mot-de-passe-oublie/", {"email": email})
+
+    def test_lien_envoye_puis_nouveau_mot_de_passe(self):
+        reponse = self.demander("AWA@ecole.ci")  # la casse ne compte pas
+        self.assertRedirects(reponse, "/comptes/mot-de-passe-oublie/envoye/")
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+        self.assertEqual(message.to, ["awa@ecole.ci"])
+        self.assertIn("Réinitialisation", message.subject)
+        self.assertIn("Bonjour Awa", message.body)
+        lien = re.search(r"https?://[^\s]+/comptes/reinitialiser/[^\s]+/", message.body).group(0)
+        chemin = lien.split("testserver", 1)[1]
+        page = self.client.get(chemin, follow=True)  # Django redirige vers une URL sans le jeton
+        self.assertContains(page, "Nouveau mot de passe")
+        reponse = self.client.post(page.redirect_chain[-1][0], {
+            "new_password1": "Nouveau-MotDePasse-2026", "new_password2": "Nouveau-MotDePasse-2026"})
+        self.assertRedirects(reponse, "/comptes/reinitialiser/termine/")
+        self.compte.refresh_from_db()
+        self.assertTrue(self.compte.check_password("Nouveau-MotDePasse-2026"))
+        # le lien ne sert qu'une fois
+        self.assertContains(self.client.get(chemin, follow=True), "Lien expiré")
+
+    def test_adresse_inconnue_meme_reponse_sans_e_mail(self):
+        reponse = self.demander("inconnu@ecole.ci")
+        self.assertRedirects(reponse, "/comptes/mot-de-passe-oublie/envoye/")
+        self.assertEqual(len(mail.outbox), 0)  # on ne révèle pas si le compte existe
+
+    def test_trop_de_demandes_bloquees(self):
+        for _ in range(5):
+            self.demander()
+        reponse = self.demander()
+        self.assertContains(reponse, "Trop de demandes en peu de temps")
+        self.assertEqual(len(mail.outbox), 5)
+
+    @override_settings(EMAIL_CONFIGURE=False, DEBUG=False)
+    def test_message_si_envoi_non_configure(self):
+        self.assertContains(self.client.get("/comptes/mot-de-passe-oublie/"), "L’envoi d’e-mails n’est pas encore activé")
+
+    def test_lien_sur_la_page_de_connexion(self):
+        self.assertContains(self.client.get("/comptes/connexion/"), "/comptes/mot-de-passe-oublie/")
+
+
+class SessionEtChangementDeCompteTests(TestCase):
+    def setUp(self):
+        Utilisateur.objects.create_user(email="koffi@ecole.ci", password="MotDePasse-Solide-2026")
+
+    def connecter(self, **extra):
+        return self.client.post("/comptes/connexion/", {"username": "koffi@ecole.ci", "password": "MotDePasse-Solide-2026", **extra})
+
+    def test_rester_connecte_garde_la_session_60_jours(self):
+        self.connecter(rester_connecte="on")
+        self.assertEqual(self.client.session.get_expiry_age(), 60 * 24 * 3600)
+        self.assertFalse(self.client.session.get_expire_at_browser_close())
+
+    def test_sans_rester_connecte_session_jusqu_a_fermeture(self):
+        self.connecter()
+        self.assertTrue(self.client.session.get_expire_at_browser_close())
+
+    def test_case_cochee_par_defaut(self):
+        html = self.client.get("/comptes/connexion/").content.decode()
+        self.assertRegex(html, r'<input[^>]*name="rester_connecte"[^>]*checked')
+
+    def test_changer_de_compte_deconnecte_et_ouvre_la_connexion(self):
+        self.connecter(rester_connecte="on")
+        reponse = self.client.post("/comptes/deconnexion/", {"next": "/comptes/connexion/"})
+        self.assertRedirects(reponse, "/comptes/connexion/")
+        self.assertNotIn("_auth_user_id", self.client.session)
