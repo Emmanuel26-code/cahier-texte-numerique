@@ -13,3 +13,4 @@ lancer.bat
 .env.local
 .vercel/
 .github/
+.env.preview
