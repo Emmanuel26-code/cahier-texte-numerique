@@ -1,13 +1,34 @@
-{% extends "base.html" %}
-
-{% block titre %}Inscription{% endblock %}
-
-{% block contenu %}
+{% extends "comptes/_auth.html" %}
+{% block titre %}Créer un compte · Cahier de texte numérique{% endblock %}
+{% block accroche %}Rejoignez votre <em>classe.</em>{% endblock %}
+{% block accroche_texte %}Créez votre compte en une minute. L’administration vous rattache ensuite à vos classes.{% endblock %}
+{% block formulaire %}
   <h1>Créer un compte</h1>
-  <form method="post">
+  <p class="sous-titre">Quelques informations et c’est parti.</p>
+  <form method="post" novalidate data-chargement>
     {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn w-100">S'inscrire</button>
+    {% if form.non_field_errors %}
+      <div class="alerte-formulaire" role="alert"><ul>{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul></div>
+    {% endif %}
+    <fieldset class="choix-role">
+      <legend>{{ form.role.label }}</legend>
+      {% for choix in form.role %}
+        <label for="{{ choix.id_for_label }}">
+          {{ choix.tag }}
+          <span class="pastille-role" aria-hidden="true">{% if choix.data.value == "professeur" %}✎{% else %}◉{% endif %}</span>
+          {{ choix.choice_label }}
+        </label>
+      {% endfor %}
+    </fieldset>
+    {% for e in form.role.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+    <div class="champ-duo">
+      {% include "partials/champ.html" with champ=form.first_name %}
+      {% include "partials/champ.html" with champ=form.last_name %}
+    </div>
+    {% include "partials/champ.html" with champ=form.email %}
+    {% include "partials/champ.html" with champ=form.password1 mdp=True %}
+    {% include "partials/champ.html" with champ=form.password2 mdp=True %}
+    <button class="button block" type="submit">Créer mon compte</button>
   </form>
-  <p>Déjà inscrit ? <a href="{% url 'login' %}">Connectez-vous</a></p>
+  <p class="auth-bas">Déjà inscrit ? <a href="{% url 'login' %}">Se connecter</a></p>
 {% endblock %}
