@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% comment %}Gabarit commun des pages de connexion et d'inscription.{% endcomment %}
+{% block page_publique %}
+<div class="auth">
+  <section class="auth-visuel">
+    <a class="brand" href="{% url 'accueil' %}"><span class="brand-icon">CT</span><span>Cahier de texte<br>numérique</span></a>
+    <div class="auth-accroche">
+      <h2>{% block accroche %}Le cahier de texte, <em>enfin simple.</em>{% endblock %}</h2>
+      <p>{% block accroche_texte %}Séances, travail à faire et plans de cours de toute la classe, au même endroit.{% endblock %}</p>
+    </div>
+    <ul class="auth-points">
+      <li><span aria-hidden="true">✎</span> Les professeurs saisissent leurs séances en quelques secondes</li>
+      <li><span aria-hidden="true">✦</span> L’IA propose un plan de cours, le professeur le valide</li>
+      <li><span aria-hidden="true">◉</span> Les élèves sont prévenus du travail à faire</li>
+    </ul>
+  </section>
+  <main class="auth-formulaire" id="contenu">
+    <div class="auth-carte">
+      {% include "partials/messages.html" %}
+      {% block formulaire %}{% endblock %}
+    </div>
+  </main>
+</div>
+{% endblock %}

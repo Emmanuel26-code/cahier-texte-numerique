@@ -15,7 +15,6 @@ class UtilisateurTests(TestCase):
 
 class InscriptionConnexionTests(TestCase):
     donnees = {
-        "username": "prof1",
         "first_name": "Awa",
         "last_name": "Kone",
         "email": "awa@example.com",
@@ -27,27 +26,44 @@ class InscriptionConnexionTests(TestCase):
     def test_inscription_cree_un_compte_au_mot_de_passe_hache(self):
         reponse = self.client.post("/comptes/inscription/", self.donnees)
         self.assertRedirects(reponse, "/tableau-de-bord/", fetch_redirect_response=False)
-        u = Utilisateur.objects.get(username="prof1")
+        u = Utilisateur.objects.get(email="awa@example.com")
+        self.assertEqual(u.username, "awa")  # identifiant interne généré à partir de l'e-mail
         self.assertNotEqual(u.password, "MotDePasse-Solide-2026")  
         self.assertTrue(u.password.startswith("pbkdf2_sha256$"))
 
     def test_on_ne_peut_pas_s_inscrire_administrateur(self):
         self.client.post("/comptes/inscription/", {**self.donnees, "role": "administrateur"})
-        self.assertFalse(Utilisateur.objects.filter(username="prof1").exists())
+        self.assertFalse(Utilisateur.objects.filter(email="awa@example.com").exists())
 
     def test_connexion_et_deconnexion(self):
         Utilisateur.objects.create_user("eleve2", "e2@example.com", "MotDePasse-Solide-2026")
         reponse = self.client.post(
-            "/comptes/connexion/", {"username": "eleve2", "password": "MotDePasse-Solide-2026"}
+            "/comptes/connexion/", {"username": "E2@Example.com", "password": "MotDePasse-Solide-2026"}  # e-mail, casse ignorée
         )
         self.assertRedirects(reponse, "/tableau-de-bord/", fetch_redirect_response=False)
         self.assertIn("_auth_user_id", self.client.session) 
         self.client.post("/comptes/deconnexion/")
         self.assertNotIn("_auth_user_id", self.client.session)  
 
+    def test_le_formulaire_ne_demande_pas_de_nom_d_utilisateur(self):
+        reponse = self.client.get("/comptes/inscription/")
+        self.assertNotIn("username", reponse.context["form"].fields)
+
+    def test_deux_e_mails_identiques_a_la_casse_pres_refuses(self):
+        self.client.post("/comptes/inscription/", self.donnees)
+        self.client.logout()
+        reponse = self.client.post("/comptes/inscription/", {**self.donnees, "email": "AWA@example.com"})
+        self.assertContains(reponse, "Un compte existe déjà avec cette adresse e-mail.")
+        self.assertEqual(Utilisateur.objects.count(), 1)
+
+    def test_identifiants_internes_uniques(self):
+        a = Utilisateur.objects.create_user(email="awa@ecole.ci", password="x" * 12)
+        b = Utilisateur.objects.create_user(email="awa@autre.ci", password="x" * 12)
+        self.assertEqual((a.username, b.username), ("awa", "awa2"))
+
     def test_mauvais_mot_de_passe_refuse(self):
         Utilisateur.objects.create_user("eleve3", "e3@example.com", "MotDePasse-Solide-2026")
-        reponse = self.client.post("/comptes/connexion/", {"username": "eleve3", "password": "faux"})
+        reponse = self.client.post("/comptes/connexion/", {"username": "e3@example.com", "password": "faux"})
         self.assertEqual(reponse.status_code, 200)  
         self.assertNotIn("_auth_user_id", self.client.session)
 
@@ -128,7 +144,6 @@ class GestionUtilisateursTests(TestCase):
         response = self.client.post(
             "/comptes/utilisateurs/",
             {
-                "username": "nouvel-eleve",
                 "first_name": "Aminata",
                 "last_name": "Traore",
                 "email": "aminata@example.com",
@@ -139,6 +154,6 @@ class GestionUtilisateursTests(TestCase):
             },
         )
         self.assertRedirects(response, "/comptes/utilisateurs/")
-        eleve = Utilisateur.objects.get(username="nouvel-eleve")
+        eleve = Utilisateur.objects.get(email="aminata@example.com")
         self.assertTrue(eleve.check_password("S3cure!User2026"))
         self.assertEqual(list(eleve.classes_suivies.all()), [self.classe])

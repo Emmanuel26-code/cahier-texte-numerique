@@ -117,7 +117,7 @@ print(f"""
  INSTALLATION TERMINÉE
  Site        : http://127.0.0.1:8000/
  Administration : http://127.0.0.1:8000/admin/
- Identifiant : {ADMIN_USER}      Mot de passe : {"(inchangé)" if compte_existant else ADMIN_PASS}
+ E-mail : {ADMIN_MAIL}      Mot de passe : {"(inchangé)" if compte_existant else ADMIN_PASS}
  (notez ce mot de passe : il n'est affiché qu'une seule fois)
  Pour relancer le site plus tard : double-clic sur lancer.bat
 ==================================================================""")
