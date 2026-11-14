@@ -116,6 +116,12 @@ $env:DJANGO_ENV_FILE=".env.production"; .venv\Scripts\python.exe manage.py creat
 > **Déjà fait pour ce projet :** projet Vercel `cahier-texte-numerique`, variables de production
 > importées, site en ligne sur **https://cahier-texte-numerique.vercel.app**.
 > Pour redéployer à la main : `vercel deploy --prod`.
+>
+> **Préversions de Pull Request :** chaque PR reçoit une adresse Vercel temporaire (visible
+> seulement des membres du projet Vercel). Elle utilise la branche Neon `preview` — une base
+> et un stockage séparés, **sans aucune donnée de production** — et y applique les migrations
+> au déploiement. Variables dans le fichier local `.env.preview` (jamais commité).
+> La génération de plans par IA y est désactivée (pas de `GEMINI_API_KEY`).
 
 ## Équipe
 
