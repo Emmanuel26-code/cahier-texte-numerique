@@ -16,7 +16,7 @@ def utilisateurs(request):
     classe_id = request.GET.get("classe", "")
     comptes = Utilisateur.objects.annotate(
         nombre_classes=Count("classes_suivies", distinct=True)
-    ).order_by("last_name", "first_name", "username")
+    ).order_by("last_name", "first_name", "email")
     if query:
         comptes = comptes.filter(
             Q(first_name__icontains=query)
