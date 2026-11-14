@@ -11,7 +11,7 @@
   <div class="panel-heading">
     <div><h2>Utilisateurs de l’établissement</h2><p>{{ comptes|length }} résultat{{ comptes|length|pluralize }} sur {{ nombre_total }} compte{{ nombre_total|pluralize }}</p></div>
   </div>
-  <form method="get" class="filter-form" style="grid-template-columns:minmax(180px,1.5fr) repeat(2,minmax(130px,1fr)) auto;margin-bottom:14px">
+  <form method="get" class="filter-form" style="grid-template-columns:minmax(180px,1.5fr) repeat(2,minmax(130px,1fr)) auto;margin-bottom:16px">
     <div><label for="q">Rechercher</label><input id="q" name="q" value="{{ q }}" placeholder="Nom, prénom ou e-mail"></div>
     <div><label for="role">Rôle</label><select id="role" name="role"><option value="">Tous les rôles</option>{% for value,label in roles %}<option value="{{ value }}" {% if role_filtre == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
     <div><label for="classe">Classe d’inscription</label><select id="classe" name="classe"><option value="">Toutes les classes</option>{% for classe in classes %}<option value="{{ classe.pk }}" {% if classe_filtre == classe.pk|stringformat:"s" %}selected{% endif %}>{{ classe.nom }} · {{ classe.annee.libelle }}</option>{% endfor %}</select></div>
@@ -24,7 +24,7 @@
         {% for compte in comptes %}
           <tr class="{% if selection.pk == compte.pk %}row-selected{% endif %}">
             <td><strong>{{ compte.last_name|default:"—" }}</strong></td>
-            <td>{{ compte.first_name|default:compte.username }}</td>
+            <td>{{ compte.first_name|default:"—" }}</td>
             <td>{{ compte.email }}</td>
             <td>{{ compte.get_role_display }}</td>
             <td>{% if compte.est_eleve %}{{ compte.nombre_classes }} classe{{ compte.nombre_classes|pluralize }}{% else %}—{% endif %}</td>
@@ -39,16 +39,16 @@
   </div>
 </section>
 
-<div class="management-grid" style="margin-top:15px">
+<div class="management-grid" style="margin-top:18px">
   <section class="panel">
     <div class="panel-heading">
-      <div><h2>{% if selection %}Profil de {{ selection.get_full_name|default:selection.username }}{% else %}Créer un utilisateur{% endif %}</h2><p>Modifiez les informations et le rôle du compte.</p></div>
+      <div><h2>{% if selection %}Profil de {{ selection.get_full_name|default:selection.email }}{% else %}Créer un utilisateur{% endif %}</h2><p>Modifiez les informations et le rôle du compte.</p></div>
     </div>
     <form method="post" class="form-grid two">
       {% csrf_token %}
       {% if selection %}<input type="hidden" name="user_id" value="{{ selection.pk }}">{% endif %}
       {% for field in form %}
-        <div class="form-field {% if field.name == 'classes' %}span-two{% endif %}">
+        <div class="form-field {% if field.name == 'classes' or field.name == 'email' %}span-two{% endif %}{% if field.name == 'is_active' %} case-a-cocher{% endif %}">
           <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
           {{ field }}
           {% if field.help_text %}<div class="form-help">{{ field.help_text }}</div>{% endif %}
@@ -66,7 +66,7 @@
 
   <div class="form-grid" style="align-content:start">
     <section class="panel">
-      <div class="panel-heading"><div><h2>Affectations de {% if selection %}{{ selection.first_name|default:selection.username }}{% else %}l’enseignant{% endif %}</h2><p>Affectations pédagogiques de l’enseignant.</p></div></div>
+      <div class="panel-heading"><div><h2>Affectations de {% if selection %}{{ selection.first_name|default:selection.email }}{% else %}l’enseignant{% endif %}</h2><p>Affectations pédagogiques de l’enseignant.</p></div></div>
       {% if selection and selection.est_professeur %}
         {% for affectation in selection.affectations.all %}
           <div class="field-row"><strong>{{ affectation.classe.nom }}</strong><span>{{ affectation.matiere.nom }} · <a class="table-link" href="{% url 'academique:affectations' %}?modifier={{ affectation.pk }}">Consulter</a></span></div>
@@ -77,7 +77,7 @@
       {% endif %}
     </section>
     <section class="panel">
-      <div class="panel-heading"><div><h2>Inscriptions aux classes</h2><p>{% if selection %}{{ selection.get_full_name|default:selection.username }}{% else %}Profil sélectionné{% endif %}</p></div></div>
+      <div class="panel-heading"><div><h2>Inscriptions aux classes</h2><p>{% if selection %}{{ selection.get_full_name|default:selection.email }}{% else %}Profil sélectionné{% endif %}</p></div></div>
       {% if selection and selection.est_eleve %}
         {% for inscription in inscriptions %}
           <div class="field-row"><strong>{{ inscription.classe.nom }}</strong><span>Année scolaire {{ inscription.classe.annee.libelle }}</span></div>

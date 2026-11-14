@@ -157,3 +157,36 @@ class GestionUtilisateursTests(TestCase):
         eleve = Utilisateur.objects.get(email="aminata@example.com")
         self.assertTrue(eleve.check_password("S3cure!User2026"))
         self.assertEqual(list(eleve.classes_suivies.all()), [self.classe])
+
+class GestionUtilisateursEmailTests(TestCase):
+    """La page Utilisateurs ne demande plus de nom d'utilisateur et protège l'unicité de l'e-mail."""
+
+    def setUp(self):
+        self.admin = Utilisateur.objects.create_user(
+            email="direction@ecole.ci", password="MotDePasse-Solide-2026", role=Utilisateur.Role.ADMINISTRATEUR)
+        self.client.force_login(self.admin)
+
+    def test_pas_de_champ_nom_d_utilisateur(self):
+        reponse = self.client.get("/comptes/utilisateurs/?nouveau=1")
+        self.assertNotIn("username", reponse.context["form"].fields)
+        self.assertContains(reponse, "Adresse e-mail (identifiant de connexion)")
+
+    def test_e_mail_deja_pris_refuse_meme_avec_majuscules(self):
+        Utilisateur.objects.create_user(email="awa@ecole.ci", password="x" * 12)
+        reponse = self.client.post("/comptes/utilisateurs/", {
+            "email": "AWA@ecole.ci", "first_name": "Awa", "last_name": "Bis", "role": "eleve",
+            "is_active": "on", "mot_de_passe": "S3cure!User2026",
+        })
+        self.assertContains(reponse, "Un compte existe déjà avec cette adresse e-mail.")
+        self.assertEqual(Utilisateur.objects.filter(email__iexact="awa@ecole.ci").count(), 1)
+
+    def test_modifier_un_compte_sans_changer_son_e_mail(self):
+        eleve = Utilisateur.objects.create_user(email="koffi@ecole.ci", password="x" * 12, first_name="Koffi")
+        reponse = self.client.post("/comptes/utilisateurs/", {
+            "user_id": eleve.pk, "email": "koffi@ecole.ci", "first_name": "Koffi", "last_name": "Yao",
+            "role": "eleve", "is_active": "on",
+        })
+        self.assertRedirects(reponse, "/comptes/utilisateurs/")
+        eleve.refresh_from_db()
+        self.assertEqual(eleve.last_name, "Yao")
+        self.assertTrue(eleve.check_password("x" * 12))  # mot de passe conservé
