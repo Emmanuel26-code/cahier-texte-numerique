@@ -55,7 +55,7 @@ INSTALLED_APPS = [
 
 AUTH_USER_MODEL = "comptes.Utilisateur"
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = "tableau_de_bord:accueil"  # oriente chaque rôle vers son tableau de bord
 LOGOUT_REDIRECT_URL = "login"
 
 MIDDLEWARE = [
@@ -80,6 +80,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.academique.context_processors.annee_scolaire_courante",
             ],
         },
     },

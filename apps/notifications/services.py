@@ -17,8 +17,8 @@ def extrait(texte, longueur=LONGUEUR_EXTRAIT):
 def notifier_eleves_de_la_classe(classe_id, type_notification, message):
     """Crée UNE notification par élève actif de la classe, en une seule requête d'insertion."""
     ids = Utilisateur.objects.filter(
-        role=Utilisateur.Role.ELEVE, classe_id=classe_id, is_active=True
-    ).values_list("pk", flat=True)
+        role=Utilisateur.Role.ELEVE, classes_suivies__id=classe_id, is_active=True
+    ).values_list("pk", flat=True).distinct()
     return Notification.objects.bulk_create(
         [Notification(destinataire_id=pk, type=type_notification, message=message) for pk in ids]
     )

@@ -12,6 +12,16 @@ class Plan(models.Model):
     date_generation = models.DateTimeField(auto_now_add=True)
     date_validation = models.DateTimeField(null=True, blank=True)
 
+    @property
+    def affectation(self):
+        """Le plan est rattaché à une affectation via son document."""
+        return self.document.affectation
+
+    @property
+    def titre(self):
+        """Titre affiché : le chapitre du document, sinon le nom du fichier."""
+        return self.document.chapitre or self.document.nom_original
+
     def __str__(self):
         return f"Plan #{self.pk} ({self.get_statut_display()})"
 

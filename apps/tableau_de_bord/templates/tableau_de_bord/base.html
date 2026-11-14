@@ -23,7 +23,7 @@
 <header class="bandeau">
   <strong>Cahier de texte numérique</strong>
   {% block cloche %}{% endblock %}
-  <form method="post" action="{% url 'comptes:deconnexion' %}">{% csrf_token %}
+  <form method="post" action="{% url 'logout' %}">{% csrf_token %}
     <span class="discret" style="color:#C9D6E6">{{ request.user.get_full_name|default:request.user.username }}</span>
     <button type="submit">Se déconnecter</button>
   </form>

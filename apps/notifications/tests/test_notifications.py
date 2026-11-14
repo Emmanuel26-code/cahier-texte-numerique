@@ -12,27 +12,64 @@ from apps.plans.models import Plan
 from apps.comptes.models import Utilisateur
 from apps.notifications.models import Notification
 
+import shutil
+import tempfile
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
+
+from apps.academique.models import AnneeScolaire, Inscription
+from apps.documents.models import Document
+
+MEDIA_TEST = tempfile.mkdtemp()
+
+
+def tearDownModule():
+    shutil.rmtree(MEDIA_TEST, ignore_errors=True)
+
+
+def annee():
+    return AnneeScolaire.objects.get_or_create(
+        libelle="2026-2027", defaults={"date_debut": date(2026, 9, 1), "date_fin": date(2027, 7, 31)})[0]
+
+
+def utilisateur(nom, classe=None, **kw):
+    """Crée un utilisateur (e-mail unique) et l'inscrit dans sa classe si besoin."""
+    kw.setdefault("password", "x")
+    u = Utilisateur.objects.create_user(nom, email=f"{nom}@exemple.ci", **kw)
+    if classe is not None:
+        Inscription.objects.create(eleve=u, classe=classe)
+    return u
+
+
+def creer_plan(affectation, titre, statut):
+    """Un plan est rattaché à son affectation via un document importé."""
+    doc = Document.objects.create(affectation=affectation, chapitre=titre,
+                                  fichier=SimpleUploadedFile("cours.txt", b"contenu du cours"))
+    return Plan.objects.create(document=doc, statut=statut)
+
 Role = Utilisateur.Role
 Type = Notification.Type
 
 
+@override_settings(MEDIA_ROOT=MEDIA_TEST)
 class BaseNotifications(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.classe_a = Classe.objects.create(nom="6e A")
-        cls.classe_b = Classe.objects.create(nom="5e B")
+        cls.classe_a = Classe.objects.create(nom="6e A", annee=annee())
+        cls.classe_b = Classe.objects.create(nom="5e B", annee=annee())
         maths = Matiere.objects.create(nom="Mathématiques")
-        cls.prof = Utilisateur.objects.create_user("prof", password="x", role=Role.PROFESSEUR)
-        cls.admin = Utilisateur.objects.create_user("admin1", password="x", role=Role.ADMINISTRATEUR)
+        cls.prof = utilisateur("prof", role=Role.PROFESSEUR)
+        cls.admin = utilisateur("admin1", role=Role.ADMINISTRATEUR)
         cls.aff_a = Affectation.objects.create(professeur=cls.prof, classe=cls.classe_a, matiere=maths)
         cls.aff_b = Affectation.objects.create(professeur=cls.prof, classe=cls.classe_b, matiere=maths)
-        cls.awa = Utilisateur.objects.create_user("awa", password="x", role=Role.ELEVE, classe=cls.classe_a)
-        cls.koffi = Utilisateur.objects.create_user("koffi", password="x", role=Role.ELEVE, classe=cls.classe_a)
-        cls.fatou = Utilisateur.objects.create_user("fatou", password="x", role=Role.ELEVE, classe=cls.classe_b)
+        cls.awa = utilisateur("awa", role=Role.ELEVE, classe=cls.classe_a)
+        cls.koffi = utilisateur("koffi", role=Role.ELEVE, classe=cls.classe_a)
+        cls.fatou = utilisateur("fatou", role=Role.ELEVE, classe=cls.classe_b)
 
     def seance(self, affectation=None, **kw):
         kw.setdefault("titre", "Addition de fractions")
-        return Seance.objects.create(affectation=affectation or self.aff_a, date=date(2026, 10, 12), **kw)
+        return Seance.objects.create(affectation=affectation or self.aff_a, duree_minutes=60, date_seance=date(2026, 10, 12), **kw)
 
 
 class DeclencheursTravailTests(BaseNotifications):
@@ -75,8 +112,8 @@ class DeclencheursTravailTests(BaseNotifications):
         self.assertEqual(Notification.objects.filter(destinataire=self.awa).count(), 1)
 
     def test_eleve_inactif_ou_sans_classe_non_notifie(self):
-        Utilisateur.objects.create_user("inactif", password="x", role=Role.ELEVE, classe=self.classe_a, is_active=False)
-        Utilisateur.objects.create_user("sans_classe", password="x", role=Role.ELEVE)
+        utilisateur("inactif", role=Role.ELEVE, classe=self.classe_a, is_active=False)
+        utilisateur("sans_classe", role=Role.ELEVE)
         self.seance(travail_a_faire="Leçon 3")
         self.assertEqual(Notification.objects.count(), 2)  # awa et koffi seulement
 
@@ -85,20 +122,20 @@ class DeclencheursTravailTests(BaseNotifications):
             maths = Matiere.objects.first()
             aff = Affectation.objects.create(professeur=self.prof, classe=classe, matiere=maths)
             for i in range(nb_eleves):
-                Utilisateur.objects.create_user(f"{classe.nom}-{nb_eleves}-{i}", password="x", role=Role.ELEVE, classe=classe)
+                utilisateur(f"{classe.nom}-{nb_eleves}-{i}", role=Role.ELEVE, classe=classe)
             with CaptureQueriesContext(connection) as ctx:
-                Seance.objects.create(affectation=aff, date=date(2026, 10, 12), titre="t", travail_a_faire="x")
+                Seance.objects.create(affectation=aff, duree_minutes=60, date_seance=date(2026, 10, 12), titre="t", travail_a_faire="x")
             return len(ctx)
-        petite = mesurer(Classe.objects.create(nom="petite"), 2)
-        grande = mesurer(Classe.objects.create(nom="grande"), 30)
+        petite = mesurer(Classe.objects.create(nom="petite", annee=annee()), 2)
+        grande = mesurer(Classe.objects.create(nom="grande", annee=annee()), 30)
         self.assertEqual(petite, grande)
 
 
 class DeclencheursPlanTests(BaseNotifications):
-    def plan(self, statut=Plan.Statut.BROUILLON):
-        return Plan.objects.create(affectation=self.aff_a, titre="Chapitre 6 : Les fractions", statut=statut)
+    def plan(self, statut=Plan.Statut.PROPOSE):
+        return creer_plan(self.aff_a, "Chapitre 6 : Les fractions", statut)
 
-    def test_brouillon_ne_notifie_pas(self):
+    def test_plan_propose_ne_notifie_pas(self):
         self.plan()
         self.assertEqual(Notification.objects.count(), 0)
 
@@ -116,7 +153,6 @@ class DeclencheursPlanTests(BaseNotifications):
 
     def test_resauvegarder_un_plan_valide_ne_renvoie_rien(self):
         p = self.plan(Plan.Statut.VALIDE)
-        p.titre = "Titre modifié"
         p.save()
         self.assertEqual(Notification.objects.filter(destinataire=self.awa).count(), 1)
 
@@ -192,4 +228,4 @@ class PagesNotificationsTests(BaseNotifications):
         for url in urls:
             with self.subTest(visiteur=True, url=url):
                 reponse = self.client.get(url)
-                self.assertRedirects(reponse, f"{reverse('comptes:connexion')}?next={url}", fetch_redirect_response=False)
+                self.assertRedirects(reponse, f"{reverse('login')}?next={url}", fetch_redirect_response=False)

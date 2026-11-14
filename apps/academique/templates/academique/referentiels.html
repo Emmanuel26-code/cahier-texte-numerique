@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block titre %}Référentiels · Cahier de texte{% endblock %}
+{% block fil_ariane %}Référentiels{% endblock %}
+{% block contenu %}
+<section class="page-heading">
+  <div><h1>Référentiels</h1><p>Organisez les années scolaires, les classes et les matières de l’établissement.</p></div>
+</section>
+
+<section class="panel">
+  <div class="panel-heading">
+    <div><h2>Années scolaires</h2><p>Le calendrier de référence pour les classes.</p></div>
+    <a class="button secondary small" href="{% url 'academique:referentiels' %}?modifier=annee">＋ Ajouter une année</a>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Libellé</th><th>Date de début</th><th>Date de fin</th><th>Année courante</th><th>Classes</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for annee in annees %}
+          <tr>
+            <td><strong>{{ annee.libelle }}</strong></td>
+            <td>{{ annee.date_debut|date:"d/m/Y" }}</td>
+            <td>{{ annee.date_fin|date:"d/m/Y" }}</td>
+            <td>{% if annee.est_courante %}<span class="tag success">En cours</span>{% else %}—{% endif %}</td>
+            <td>{{ annee.nombre_classes }}</td>
+            <td><a class="table-link" href="{% url 'academique:referentiels' %}?modifier=annee&amp;id={{ annee.pk }}">Modifier</a></td>
+          </tr>
+        {% empty %}<tr><td colspan="6" class="empty-state">Aucune année scolaire enregistrée.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if form_type == "annee" %}
+    <form method="post" class="form-grid two" style="margin-top:16px">
+      {% csrf_token %}<input type="hidden" name="action" value="annee"><input type="hidden" name="object_id" value="{{ object_id }}">
+      {% for field in form %}<div class="form-field"><label for="{{ field.id_for_label }}">{{ field.label }} *</label>{{ field }}{% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}</div>{% endfor %}
+      <div class="form-actions" style="grid-column:1/-1"><button class="button" type="submit">Enregistrer l’année</button><a class="button secondary" href="{% url 'academique:referentiels' %}">Annuler</a></div>
+    </form>
+  {% endif %}
+</section>
+
+<div class="management-grid equal" style="margin-top:15px">
+  <section class="panel">
+    <div class="panel-heading">
+      <div><h2>Classes</h2><p>{{ classes|length }} classe{{ classes|length|pluralize }} enregistrée{{ classes|length|pluralize }}</p></div>
+      <a class="table-link" href="{% url 'academique:referentiels' %}?modifier=classe">Ajouter</a>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table"><thead><tr><th>Nom</th><th>Année scolaire</th><th>Affectations</th><th></th></tr></thead>
+        <tbody>{% for classe in classes %}
+          <tr><td><strong>{{ classe.nom }}</strong></td><td>{{ classe.annee.libelle }}</td><td>{{ classe.nombre_affectations }}</td><td><a class="table-link" href="{% url 'academique:referentiels' %}?modifier=classe&amp;id={{ classe.pk }}">Modifier</a></td></tr>
+        {% empty %}<tr><td colspan="4" class="empty-state">Aucune classe enregistrée.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    {% if form_type == "classe" %}
+      <form method="post" class="form-grid" style="margin-top:15px">
+        {% csrf_token %}<input type="hidden" name="action" value="classe"><input type="hidden" name="object_id" value="{{ object_id }}">
+        {% for field in form %}<div class="form-field"><label for="{{ field.id_for_label }}">{{ field.label }} *</label>{{ field }}{% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}</div>{% endfor %}
+        <div class="form-actions"><button class="button" type="submit">Enregistrer la classe</button><a class="button secondary" href="{% url 'academique:referentiels' %}">Annuler</a></div>
+      </form>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <div><h2>Matières</h2><p>{{ matieres|length }} matière{{ matieres|length|pluralize }} utilisée{{ matieres|length|pluralize }} dans les affectations.</p></div>
+      <a class="table-link" href="{% url 'academique:referentiels' %}?modifier=matiere">Ajouter</a>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table"><thead><tr><th>Nom</th><th>Affectations</th><th></th></tr></thead>
+        <tbody>{% for matiere in matieres %}
+          <tr><td><strong>{{ matiere.nom }}</strong></td><td>{{ matiere.nombre_affectations }}</td><td><a class="table-link" href="{% url 'academique:referentiels' %}?modifier=matiere&amp;id={{ matiere.pk }}">Modifier</a></td></tr>
+        {% empty %}<tr><td colspan="3" class="empty-state">Aucune matière enregistrée.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    {% if form_type == "matiere" %}
+      <form method="post" class="form-grid" style="margin-top:15px">
+        {% csrf_token %}<input type="hidden" name="action" value="matiere"><input type="hidden" name="object_id" value="{{ object_id }}">
+        {% for field in form %}<div class="form-field"><label for="{{ field.id_for_label }}">{{ field.label }} *</label>{{ field }}{% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}</div>{% endfor %}
+        <div class="form-actions"><button class="button" type="submit">Enregistrer la matière</button><a class="button secondary" href="{% url 'academique:referentiels' %}">Annuler</a></div>
+      </form>
+    {% endif %}
+  </section>
+</div>
+<div class="notice" style="margin-top:15px"><strong>Des référentiels aux affectations</strong><br>Année scolaire → classe → affectation. Les séances et documents sont ensuite associés à l’affectation pédagogique.</div>
+{% endblock %}

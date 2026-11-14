@@ -9,6 +9,7 @@ from unittest.mock import patch
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 
+from apps.comptes.models import Utilisateur
 from apps.plans.tests import creer_affectation
 
 from .models import Document, nettoyer_nom
@@ -61,6 +62,16 @@ class ImportDocumentTests(TestCase):
         self.assertEqual(doc.nom_original, "cours.txt")
         self.assertEqual(doc.type_mime, "text/plain")
         self.assertEqual(doc.taille_octets, len(b"Introduction\nPartie 1"))
+
+    def test_administrateur_peut_importer_sur_une_affectation(self):
+        administrateur = Utilisateur.objects.create_user(
+            "admin-import", "admin-import@example.com", "MotDePasse-Solide-2026",
+            role="administrateur",
+        )
+        self.client.force_login(administrateur)
+        reponse = self.envoyer("cours-admin.txt", b"Support de cours")
+        self.assertRedirects(reponse, "/documents/")
+        self.assertEqual(Document.objects.get().affectation, self.affectation)
 
     def test_import_pdf_et_docx_acceptes(self):
         self.envoyer("cours.pdf", PDF_VALIDE)

@@ -8,7 +8,7 @@
 {% block contenu %}
 <div>
   <h1>Bonjour, {{ request.user.first_name|default:request.user.username }}</h1>
-  <p class="discret">{% if request.user.classe %}Classe : {{ request.user.classe }} · {% endif %}Voici ce qu’il y a à faire.</p>
+  <p class="discret">{% if classes %}Classe{{ classes|length|pluralize }} : {{ classes|join:", " }} · {% endif %}Voici ce qu’il y a à faire.</p>
 </div>
 
 {% if sans_classe %}
@@ -23,10 +23,9 @@
   <div class="grille">
     {% for s in travaux %}
     <article class="devoir">
-      <div><strong>{{ s.affectation.matiere }}</strong>
-        {% if s.pour_le %}<span class="pastille">Pour le {{ s.pour_le|date:"j F" }}</span>{% endif %}</div>
+      <div><strong>{{ s.affectation.matiere }}</strong></div>
       <div>{{ s.travail_a_faire }}</div>
-      <div class="discret">Séance du {{ s.date|date:"j F" }}</div>
+      <div class="discret">Séance du {{ s.date_seance|date:"j F" }}</div>
     </article>
     {% endfor %}
   </div>
@@ -41,7 +40,7 @@
     {% if seances %}
     <ul class="liste">
       {% for s in seances %}
-      <li><strong>{{ s.titre }}</strong><div class="discret">{{ s.affectation.matiere }} · {{ s.date|date:"j F" }}</div></li>
+      <li><strong>{{ s.titre }}</strong><div class="discret">{{ s.affectation.matiere }} · {{ s.date_seance|date:"j F" }}</div></li>
       {% endfor %}
     </ul>
     {% else %}<p class="discret">Aucune séance enregistrée.</p>{% endif %}

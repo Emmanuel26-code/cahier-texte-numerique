@@ -19,8 +19,8 @@ from apps.comptes.models import Utilisateur
 
 Role = Utilisateur.Role
 
-URL_CONNEXION = "comptes:connexion"
-URL_INSCRIPTION = "comptes:inscription"
+URL_CONNEXION = "login"
+URL_INSCRIPTION = "inscription"
 TABLEAU_DE_BORD = {  # rôle -> nom de l'URL de son tableau de bord
     Role.ELEVE: "tableau_de_bord:eleve",
     Role.PROFESSEUR: "tableau_de_bord:professeur",
@@ -30,7 +30,8 @@ MOT_DE_PASSE = "Motdepasse-Solide-2026"
 
 
 def creer(role, nom=None):
-    return Utilisateur.objects.create_user(username=nom or f"{role}_test", password=MOT_DE_PASSE, role=role)
+    nom = nom or f"{role}_test"
+    return Utilisateur.objects.create_user(username=nom, email=f"{nom}@exemple.ci", password=MOT_DE_PASSE, role=role)
 
 
 class TroisRolesTests(TestCase):
