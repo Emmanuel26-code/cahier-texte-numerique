@@ -16,3 +16,4 @@ staticfiles/
 .env.production
 .neon
 .env.local
+.env.preview
