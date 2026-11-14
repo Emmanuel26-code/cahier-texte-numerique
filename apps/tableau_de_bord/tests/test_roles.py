@@ -45,7 +45,7 @@ class TroisRolesTests(TestCase):
 class InscriptionPubliqueTests(TestCase):
     def poster(self, role, nom="nouveau"):
         return self.client.post(reverse(URL_INSCRIPTION), {
-            "username": nom, "first_name": "Awa", "last_name": "Test", "email": f"{nom}@exemple.ci",
+            "first_name": "Awa", "last_name": "Test", "email": f"{nom}@exemple.ci",
             "role": role, "password1": MOT_DE_PASSE, "password2": MOT_DE_PASSE,
         })
 
@@ -81,9 +81,9 @@ class InscriptionPubliqueTests(TestCase):
 
 class CreationAdministrateurTests(TestCase):
     def test_createsuperuser_donne_le_role_administrateur(self):
-        call_command("createsuperuser", interactive=False, username="direction",
-                     email="direction@exemple.ci", verbosity=0)
-        admin = Utilisateur.objects.get(username="direction")
+        call_command("createsuperuser", interactive=False, email="direction@exemple.ci",
+                     first_name="Awa", last_name="Kone", verbosity=0)
+        admin = Utilisateur.objects.get(email="direction@exemple.ci")
         self.assertEqual(admin.role, Role.ADMINISTRATEUR)
         self.assertTrue(admin.is_superuser)
 
@@ -128,7 +128,7 @@ class AccesParRoleTests(TestCase):
 
     def test_connexion_puis_redirection_selon_le_role(self):
         reponse = self.client.post(reverse(URL_CONNEXION), {
-            "username": self.comptes[Role.ELEVE].username, "password": MOT_DE_PASSE})
+            "username": self.comptes[Role.ELEVE].email, "password": MOT_DE_PASSE})
         self.assertRedirects(reponse, reverse("tableau_de_bord:accueil"), fetch_redirect_response=False)
 
 

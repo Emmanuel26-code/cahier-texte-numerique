@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.password_validation import validate_password
 
 from apps.academique.models import Classe, Inscription
@@ -8,21 +8,54 @@ from .models import Utilisateur
 
 
 class InscriptionForm(UserCreationForm):
-    """Formulaire d'inscription : crée un compte avec un mot de passe haché."""
+    """Formulaire d'inscription : l'e-mail sert d'identifiant, le mot de passe est haché."""
 
     class Meta(UserCreationForm.Meta):
         model = Utilisateur
-        fields = ("username", "first_name", "last_name", "email", "role")
+        fields = ("first_name", "last_name", "email", "role")
+        labels = {"first_name": "Prénom", "last_name": "Nom", "email": "Adresse e-mail", "role": "Je suis"}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
         self.fields["role"].choices = [
-            (Utilisateur.Role.PROFESSEUR, "Professeur"),
             (Utilisateur.Role.ELEVE, "Élève"),
+            (Utilisateur.Role.PROFESSEUR, "Professeur"),
         ]
+        self.fields["role"].widget = forms.RadioSelect(choices=self.fields["role"].choices)
         self.fields["first_name"].required = True
         self.fields["last_name"].required = True
+        self.fields["password1"].help_text = "8 caractères minimum, pas uniquement des chiffres."
+        self.fields["password2"].label = "Confirmer le mot de passe"
+        self.fields["password2"].help_text = ""
+        autocompletes = {"first_name": "given-name", "last_name": "family-name", "email": "email",
+                         "password1": "new-password", "password2": "new-password"}
+        for nom, valeur in autocompletes.items():
+            self.fields[nom].widget.attrs["autocomplete"] = valeur
+        self.fields["email"].widget.attrs.update({"inputmode": "email", "autocapitalize": "none", "spellcheck": "false"})
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip().lower()
+        if Utilisateur.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("Un compte existe déjà avec cette adresse e-mail.")
+        return email
+
+
+class ConnexionForm(AuthenticationForm):
+    """Connexion avec l'adresse e-mail."""
+
+    error_messages = {
+        "invalid_login": "Adresse e-mail ou mot de passe incorrect.",
+        "inactive": "Ce compte est désactivé. Contactez l'administration.",
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].label = "Adresse e-mail"
+        self.fields["username"].widget = forms.EmailInput(attrs={
+            "autocomplete": "email", "inputmode": "email",
+            "autocapitalize": "none", "spellcheck": "false",
+        })
+        self.fields["password"].widget.attrs["autocomplete"] = "current-password"
 
 
 class GestionUtilisateurForm(forms.ModelForm):
@@ -42,7 +75,7 @@ class GestionUtilisateurForm(forms.ModelForm):
     class Meta:
         model = Utilisateur
         fields = (
-            "username", "first_name", "last_name", "email", "role",
+            "first_name", "last_name", "email", "role",
             "is_active", "classes",
         )
 
