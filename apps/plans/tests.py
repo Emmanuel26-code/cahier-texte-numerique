@@ -564,9 +564,14 @@ class VueGenererPlanTests(BaseAvecFichiers):
         self.assertEqual(racines[0]["niveau"], 1)
         self.assertEqual(racines[0]["enfants"][0]["niveau"], 2)
 
-    def test_administrateur_autorise(self):
+    def test_administrateur_ne_genere_pas_de_plan(self):
         admin = creer_utilisateur("admin1", Utilisateur.Role.ADMINISTRATEUR)
-        self.assertEqual(self.poster(admin).status_code, 201)
+        faux = FauxFournisseur()
+        reponse = self.poster(admin, faux)
+        self.assertEqual(reponse.status_code, 403)
+        self.assertIn("consulte", reponse.json()["erreur"])
+        self.assertEqual(len(faux.appels), 0)  # aucun appel payant à l'IA
+        self.assertFalse(Plan.objects.exists())
 
     def test_document_inconnu(self):
         self.client.force_login(self.proprietaire)
@@ -611,8 +616,12 @@ class VueGenererPlanTests(BaseAvecFichiers):
         self.assertEqual(len(faux.appels), 2)  # le 3e appel n'a pas atteint l'IA (donc rien de payé)
         self.assertEqual(Plan.objects.count(), 2)
 
-        admin = creer_utilisateur("admin1", Utilisateur.Role.ADMINISTRATEUR)
-        self.assertEqual(self.poster(admin, faux).status_code, 201)  # le quota est propre à chaque utilisateur
+        # le quota est propre à chaque utilisateur : un autre professeur peut encore générer
+        autre_document = creer_document(creer_affectation("prof2"))
+        self.client.force_login(autre_document.affectation.professeur)
+        with patch("apps.plans.services.llm.FournisseurGemini", return_value=faux):
+            reponse = self.client.post(reverse("plans:generer_plan", args=[autre_document.id]))
+        self.assertEqual(reponse.status_code, 201)
 
     @override_settings(IA_MAX_GENERATIONS_PAR_HEURE=1)
     def test_les_tentatives_echouees_comptent_dans_le_quota(self):

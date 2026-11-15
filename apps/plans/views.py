@@ -14,6 +14,9 @@ from django.views.decorators.http import require_POST
 from apps.comptes.models import Utilisateur
 from apps.documents.models import Document
 
+from apps.comptes.permissions import role_requis
+from apps.comptes.visa import marquer_vu
+
 from .models import Plan, Titre
 from .services.erreurs import ConfigurationIAError, ExtractionError, GenerationPlanError, LLMError
 from .services.generation import generer_plan_pour_document
@@ -58,19 +61,20 @@ def _quota_depasse(utilisateur) -> bool:
 def generer_plan(request, document_id):
     """Génère par IA un plan « proposé » pour un document (POST /plans/documents/<id>/generer-plan/).
 
-    Réservé au professeur propriétaire du document et aux administrateurs. Le plan
-    reste en statut « proposé » : la validation par le professeur est obligatoire.
+    Réservé au professeur propriétaire du document (l'administration consulte les plans
+    sans en générer). Le plan reste « proposé » : la validation par le professeur est obligatoire.
     """
     if not request.user.is_authenticated:
         return JsonResponse({"erreur": "Connexion requise."}, status=401)
 
     document = get_object_or_404(Document.objects.select_related("affectation"), pk=document_id)
-    est_admin = request.user.role == Utilisateur.Role.ADMINISTRATEUR
+    if request.user.role == Utilisateur.Role.ADMINISTRATEUR:
+        return JsonResponse({"erreur": "L’administration consulte les plans mais ne les génère pas."}, status=403)
     est_proprietaire = (
         request.user.role == Utilisateur.Role.PROFESSEUR
         and document.affectation.professeur_id == request.user.id
     )
-    if not (est_admin or est_proprietaire):
+    if not est_proprietaire:
         # 404 (et non 403) : on ne révèle pas l'existence des documents des autres.
         raise Http404("Document introuvable.")
 
@@ -109,14 +113,13 @@ def generer_plan(request, document_id):
 # --- Consultation, correction et validation d'un plan --------------------------------
 
 def _peut_modifier(utilisateur, plan):
-    return utilisateur.est_administrateur or (
-        utilisateur.est_professeur and plan.document.affectation.professeur_id == utilisateur.id
-    )
+    """Seul le professeur du cours corrige, valide ou rejette un plan."""
+    return utilisateur.est_professeur and plan.document.affectation.professeur_id == utilisateur.id
 
 
 def _peut_voir(utilisateur, plan):
-    """Professeur propriétaire et administrateur : toujours. Élève : plans VALIDÉS de sa classe."""
-    if _peut_modifier(utilisateur, plan):
+    """Professeur propriétaire et administration : toujours. Élève : plans VALIDÉS de sa classe."""
+    if utilisateur.est_administrateur or _peut_modifier(utilisateur, plan):
         return True
     return (
         utilisateur.est_eleve
@@ -181,5 +184,14 @@ def detail_plan(request, plan_id):
             "titres": plan.titres.order_by("ordre"),
             "modifiable": modifiable,
             "peut_gerer": _peut_modifier(request.user, plan),
+            "peut_viser": request.user.est_administrateur,
         },
     )
+
+
+@role_requis(Utilisateur.Role.ADMINISTRATEUR)
+@require_POST
+def marquer_vu_plan(request, plan_id):
+    """Visa de la direction : le plan est marqué comme vu (aucune modification)."""
+    marquer_vu(request, get_object_or_404(Plan, pk=plan_id))
+    return redirect("plans:detail", plan_id=plan_id)

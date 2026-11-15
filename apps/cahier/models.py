@@ -14,6 +14,12 @@ class Seance(models.Model):
     date_modification = models.DateTimeField(auto_now=True)
     # Avancement du programme : séance <-> points du plan
     points_du_plan = models.ManyToManyField("plans.Titre", blank=True, related_name="seances")
+    # Visa de la direction : l'administrateur consulte et marque « vu », sans modifier.
+    vu_le = models.DateTimeField("vu par la direction le", null=True, blank=True)
+    vu_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="+", verbose_name="vu par",
+    )
 
     class Meta:
         verbose_name = "séance"

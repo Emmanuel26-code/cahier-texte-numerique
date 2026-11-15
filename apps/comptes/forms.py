@@ -110,7 +110,7 @@ class GestionUtilisateurForm(forms.ModelForm):
             "role": "Rôle",
             "is_active": "Compte actif",
         }
-        help_texts = {"is_active": "Décochez pour bloquer la connexion sans supprimer le compte."}
+        help_texts = {"is_active": "Décoché : la connexion est bloquée et le compte est supprimé au bout de 30 jours."}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

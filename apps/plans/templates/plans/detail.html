@@ -11,7 +11,8 @@
   </div>
   <div class="form-actions" style="margin:0">
     <span class="tag {% if plan.statut == 'valide' %}success{% endif %}">{{ plan.get_statut_display }}</span>
-    {% if peut_gerer %}<a class="button secondary" href="{% url 'documents:liste' %}?document={{ plan.document_id }}">{% icone "retour" %} Document</a>
+    {% url 'plans:marquer_vu' plan.pk as url_vu %}{% include "partials/visa.html" with objet=plan url=url_vu %}
+    {% if peut_gerer or peut_viser %}<a class="button secondary" href="{% url 'documents:liste' %}?document={{ plan.document_id }}">{% icone "retour" %} Document</a>
     {% else %}<a class="button secondary" href="{% url 'tableau_de_bord:accueil' %}">{% icone "retour" %} Tableau de bord</a>{% endif %}
   </div>
 </section>
