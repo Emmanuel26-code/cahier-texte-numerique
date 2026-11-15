@@ -5,7 +5,7 @@
 {% block contenu %}
 <section class="page-heading">
   <div><h1>Documents</h1><p>Centralisez les supports de cours et les plans associés.</p></div>
-  <a class="button" href="#importer">{% icone "envoi" %} Importer un document</a>
+  {% if form %}<a class="button" href="#importer">{% icone "envoi" %} Importer un document</a>{% endif %}
 </section>
 
 <section class="panel">
@@ -24,7 +24,7 @@
       <tbody>
         {% for document in documents %}
           <tr class="{% if selection.pk == document.pk %}row-selected{% endif %}">
-            <td><a class="table-link" href="{% url 'documents:liste' %}?document={{ document.pk }}">{{ document.nom_original }}</a></td>
+            <td><a class="table-link" href="{% url 'documents:liste' %}?document={{ document.pk }}">{{ document.nom_original }}</a>{% if document.vu_le %} <span class="tag success">Vu</span>{% endif %}</td>
             <td>{{ document.affectation.professeur.get_full_name|default:document.affectation.professeur.username }}<br><span class="muted">{{ document.affectation.classe.nom }} · {{ document.affectation.matiere.nom }}</span></td>
             <td>{{ document.chapitre|default:"—" }}</td>
             <td>{% if document.type_mime == "application/pdf" %}PDF{% elif document.type_mime == "text/plain" %}TXT{% elif document.type_mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" %}DOCX{% elif document.type_mime == "application/vnd.openxmlformats-officedocument.presentationml.presentation" %}PPTX{% elif document.type_mime == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" %}XLSX{% else %}Fichier{% endif %}</td>
@@ -38,7 +38,7 @@
   </div>
 </section>
 
-<div class="management-grid" style="margin-top:15px">
+<div class="{% if form %}management-grid{% endif %}" style="margin-top:15px">
   <section class="panel">
     <div class="panel-heading">
       <div><h2>Détail du document</h2><p>{% if selection %}{{ selection.nom_original }}{% else %}Sélectionnez un document dans la bibliothèque.{% endif %}</p></div>
@@ -54,7 +54,8 @@
       </div>
       <div class="form-actions">
         <a class="button secondary" href="{% url 'documents:telecharger' selection.pk %}">{% icone "telecharger" %} Télécharger</a>
-        {% if user.est_administrateur or selection.affectation.professeur_id == user.id %}
+        {% url 'documents:marquer_vu' selection.pk as url_vu %}{% include "partials/visa.html" with objet=selection url=url_vu peut_viser=user.est_administrateur %}
+        {% if user.est_professeur and selection.affectation.professeur_id == user.id %}
           <button type="button" class="button" data-generer data-url="{% url 'plans:generer_plan' selection.pk %}">{% icone "plan" %} Générer un plan</button>
         {% endif %}
       </div>
@@ -63,7 +64,7 @@
       <div class="table-wrap">
         <table class="data-table"><thead><tr><th>Génération</th><th>Statut</th><th>Validation</th><th></th></tr></thead>
           <tbody>{% for plan in selection.plans.all %}
-            <tr><td>{{ plan.date_generation|date:"d/m/Y" }}</td><td><span class="tag {% if plan.statut == 'valide' %}success{% endif %}">{{ plan.get_statut_display }}</span></td><td>{{ plan.date_validation|date:"d/m/Y"|default:"Non validé" }}</td><td><a class="table-link" href="{% url 'plans:detail' plan.pk %}">{% if plan.statut == 'propose' %}Relire et valider{% else %}Consulter{% endif %}</a></td></tr>
+            <tr><td>{{ plan.date_generation|date:"d/m/Y" }}</td><td><span class="tag {% if plan.statut == 'valide' %}success{% endif %}">{{ plan.get_statut_display }}</span></td><td>{{ plan.date_validation|date:"d/m/Y"|default:"Non validé" }}</td><td><a class="table-link" href="{% url 'plans:detail' plan.pk %}">{% if plan.statut == 'propose' and user.est_professeur %}Relire et valider{% else %}Consulter{% endif %}</a></td></tr>
           {% empty %}<tr><td colspan="4" class="muted">Aucun plan rattaché.</td></tr>{% endfor %}</tbody>
         </table>
       </div>
@@ -72,6 +73,7 @@
     {% endif %}
   </section>
 
+  {% if form %}
   <section class="panel" id="importer">
     <div class="panel-heading"><div><h2>Importer un document</h2><p>Choisissez son affectation et son chapitre.</p></div></div>
     <form method="post" enctype="multipart/form-data" class="form-grid">
@@ -89,6 +91,7 @@
       <div class="form-actions"><button class="button" type="submit">{% icone "envoi" %} Importer</button><a class="button secondary" href="{% url 'documents:liste' %}">Annuler</a></div>
     </form>
   </section>
+  {% endif %}
 </div>
 
 <script>

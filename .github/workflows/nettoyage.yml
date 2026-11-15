@@ -1,0 +1,32 @@
+# Chaque nuit : supprime les comptes désactivés depuis plus de 30 jours
+# (voir apps/comptes/management/commands/supprimer_comptes_desactives.py).
+name: Nettoyage des comptes
+
+on:
+  schedule:
+    - cron: "15 3 * * *"  # tous les jours à 3 h 15 (heure d'Abidjan = UTC)
+  workflow_dispatch:
+
+jobs:
+  nettoyage:
+    name: Comptes désactivés depuis plus de 30 jours
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: inutile-pour-le-nettoyage
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+          cache: pip
+
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
+
+      - name: Supprimer les comptes désactivés depuis plus de 30 jours
+        run: python manage.py supprimer_comptes_desactives

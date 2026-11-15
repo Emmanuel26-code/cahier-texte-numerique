@@ -1,3 +1,4 @@
+import io
 import re
 import datetime
 
@@ -96,8 +97,8 @@ class RolesTests(TestCase):
     def test_eleve_ne_peut_pas_importer(self):
         self.assertEqual(self.acces_importer(self.eleve), 403)
 
-    def test_administrateur_peut_importer_un_document_de_gestion(self):
-        self.assertEqual(self.acces_importer(self.admin), 200)
+    def test_administrateur_ne_peut_pas_importer(self):
+        self.assertEqual(self.acces_importer(self.admin), 403)  # il consulte les cours sans en importer
 
     def test_visiteur_redirige_vers_la_connexion(self):
         reponse = self.client.get("/documents/importer/")
@@ -273,3 +274,81 @@ class SessionEtChangementDeCompteTests(TestCase):
         reponse = self.client.post("/comptes/deconnexion/", {"next": "/comptes/connexion/"})
         self.assertRedirects(reponse, "/comptes/connexion/")
         self.assertNotIn("_auth_user_id", self.client.session)
+
+
+from datetime import timedelta  # noqa: E402
+
+from django.core.management import call_command  # noqa: E402
+from django.utils import timezone  # noqa: E402
+
+from apps.academique.models import Affectation, Inscription, Matiere  # noqa: E402
+
+
+class SuppressionComptesDesactivesTests(TestCase):
+    def setUp(self):
+        annee = AnneeScolaire.objects.create(libelle="2026-2027", date_debut=datetime.date(2026, 9, 1), date_fin=datetime.date(2027, 6, 30))
+        self.classe = Classe.objects.create(nom="5e C", annee=annee)
+
+    def vieillir(self, compte, jours):
+        Utilisateur.objects.filter(pk=compte.pk).update(date_desactivation=timezone.now() - timedelta(days=jours))
+
+    def test_date_posee_a_la_desactivation_et_effacee_a_la_reactivation(self):
+        compte = Utilisateur.objects.create_user(email="a@ecole.ci", password="x" * 12)
+        self.assertIsNone(compte.date_desactivation)
+        compte.is_active = False
+        compte.save()
+        self.assertIsNotNone(compte.date_desactivation)
+        self.assertIsNotNone(compte.date_suppression_prevue)
+        compte.is_active = True
+        compte.save()
+        self.assertIsNone(compte.date_desactivation)
+
+    def test_supprime_apres_30_jours_seulement(self):
+        ancien = Utilisateur.objects.create_user(email="ancien@ecole.ci", password="x" * 12, is_active=False)
+        recent = Utilisateur.objects.create_user(email="recent@ecole.ci", password="x" * 12, is_active=False)
+        actif = Utilisateur.objects.create_user(email="actif@ecole.ci", password="x" * 12)
+        Inscription.objects.create(eleve=ancien, classe=self.classe)
+        self.vieillir(ancien, 31)
+        self.vieillir(recent, 10)
+        call_command("supprimer_comptes_desactives", stdout=io.StringIO())
+        self.assertFalse(Utilisateur.objects.filter(pk=ancien.pk).exists())
+        self.assertTrue(Utilisateur.objects.filter(pk=recent.pk).exists())
+        self.assertTrue(Utilisateur.objects.filter(pk=actif.pk).exists())
+
+    def test_professeur_avec_historique_anonymise(self):
+        prof = Utilisateur.objects.create_user(email="prof@ecole.ci", password="x" * 12, first_name="Yao",
+                                               role=Utilisateur.Role.PROFESSEUR, is_active=False)
+        Affectation.objects.create(professeur=prof, classe=self.classe, matiere=Matiere.objects.create(nom="SVT"))
+        self.vieillir(prof, 40)
+        sortie = io.StringIO()
+        call_command("supprimer_comptes_desactives", stdout=sortie)
+        prof.refresh_from_db()
+        self.assertTrue(prof.email.endswith("@compte-supprime.invalid"))
+        self.assertEqual(prof.first_name, "Compte")
+        self.assertFalse(prof.has_usable_password())
+        self.assertEqual(Affectation.objects.filter(professeur=prof).count(), 1)  # l'historique de la classe reste
+        self.assertIn("1 compte(s) anonymisé(s)", sortie.getvalue())
+        self.assertNotIn("prof@ecole.ci", sortie.getvalue())  # aucune donnée personnelle dans les journaux
+
+    def test_superutilisateur_jamais_supprime(self):
+        chef = Utilisateur.objects.create_superuser(email="chef@ecole.ci", password="x" * 12)
+        chef.is_active = False
+        chef.save()
+        self.vieillir(chef, 90)
+        call_command("supprimer_comptes_desactives", stdout=io.StringIO())
+        self.assertTrue(Utilisateur.objects.filter(pk=chef.pk).exists())
+
+    def test_simulation_ne_supprime_rien(self):
+        compte = Utilisateur.objects.create_user(email="sim@ecole.ci", password="x" * 12, is_active=False)
+        self.vieillir(compte, 31)
+        call_command("supprimer_comptes_desactives", "--simulation", stdout=io.StringIO())
+        self.assertTrue(Utilisateur.objects.filter(pk=compte.pk).exists())
+
+    def test_page_utilisateurs_affiche_la_date_de_suppression(self):
+        admin = Utilisateur.objects.create_user(email="dir@ecole.ci", password="x" * 12, role=Utilisateur.Role.ADMINISTRATEUR)
+        Utilisateur.objects.create_user(email="parti@ecole.ci", password="x" * 12, is_active=False)
+        self.client.force_login(admin)
+        page = self.client.get("/comptes/utilisateurs/")
+        self.assertContains(page, "Supprimé le")
+        self.assertContains(page, "supprimé au bout de 30 jours")
+        self.assertNotContains(page, "Les mots de passe ne sont jamais affichés")

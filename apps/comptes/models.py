@@ -1,7 +1,9 @@
 import re
+from datetime import timedelta
 
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
+from django.utils import timezone
 
 
 class UtilisateurManager(UserManager):
@@ -39,6 +41,11 @@ class Utilisateur(AbstractUser):
 
     email = models.EmailField("adresse e-mail", unique=True)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.ELEVE)
+    # Un compte désactivé est supprimé au bout de JOURS_AVANT_SUPPRESSION jours
+    # (commande « supprimer_comptes_desactives », lancée chaque jour).
+    date_desactivation = models.DateTimeField("désactivé le", null=True, blank=True, editable=False)
+
+    JOURS_AVANT_SUPPRESSION = 30
 
     USERNAME_FIELD = "email"
     EMAIL_FIELD = "email"
@@ -79,7 +86,20 @@ class Utilisateur(AbstractUser):
             self.username = self.nom_utilisateur_libre(self.email)
         if self.is_superuser:
             self.role = self.Role.ADMINISTRATEUR
+        # Date de désactivation : posée quand le compte est décoché, effacée s'il est réactivé
+        if self.is_active:
+            self.date_desactivation = None
+        elif self.date_desactivation is None:
+            self.date_desactivation = timezone.now()
+        if kwargs.get("update_fields") is not None:
+            kwargs["update_fields"] = {*kwargs["update_fields"], "date_desactivation"}
         super().save(*args, **kwargs)
+
+    @property
+    def date_suppression_prevue(self):
+        if self.is_active or self.date_desactivation is None:
+            return None
+        return self.date_desactivation + timedelta(days=self.JOURS_AVANT_SUPPRESSION)
 
     def __str__(self):
         return f"{self.get_full_name() or self.email} ({self.get_role_display()})"

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -11,6 +12,12 @@ class Plan(models.Model):
     statut = models.CharField(max_length=10, choices=Statut.choices, default=Statut.PROPOSE)
     date_generation = models.DateTimeField(auto_now_add=True)
     date_validation = models.DateTimeField(null=True, blank=True)
+    # Visa de la direction : l'administrateur consulte et marque « vu », sans modifier.
+    vu_le = models.DateTimeField("vu par la direction le", null=True, blank=True)
+    vu_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="+", verbose_name="vu par",
+    )
 
     @property
     def affectation(self):

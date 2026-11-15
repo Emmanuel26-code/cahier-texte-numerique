@@ -102,6 +102,8 @@ def donnees_tableau_bord_administrateur():
         "nb_documents": Document.objects.count(),
         "nb_plans_valides": plans.get(Plan.Statut.VALIDE, 0),
         "nb_plans_en_attente": plans.get(Plan.Statut.PROPOSE, 0),
+        "nb_seances_a_viser": Seance.objects.filter(supprime=False, vu_le__isnull=True).count(),
+        "nb_cours_a_viser": Document.objects.filter(vu_le__isnull=True).count(),
         "affectations_sans_seance": list(
             Affectation.objects.annotate(n=Count("seances", filter=Q(seances__supprime=False)))
             .filter(n=0)
