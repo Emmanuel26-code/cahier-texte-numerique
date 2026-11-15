@@ -336,6 +336,52 @@ class LLMTests(SimpleTestCase):
         self.assertIn("RuntimeError", "\n".join(logs.output))  # mais le type d'erreur reste diagnosticable
 
 
+class ErreurGemini(Exception):
+    """Imite les erreurs de google-genai, qui portent un code HTTP."""
+
+    def __init__(self, code):
+        super().__init__(f"erreur {code}")
+        self.code = code
+
+
+@override_settings(GEMINI_API_KEY="cle-test", GEMINI_MODEL="principal",
+                   GEMINI_MODELES_SECOURS=["secours-1", "secours-2"], IA_TIMEOUT_SECONDS=50)
+class ModelesDeSecoursTests(SimpleTestCase):
+    def appeler(self, effets):
+        with patch("google.genai.Client") as client_cls:
+            client_cls.return_value.models.generate_content.side_effect = effets
+            with self.assertLogs("apps.plans.services.llm", level="INFO"):
+                try:
+                    return llm.FournisseurGemini().generer_json("consignes", "texte"), client_cls
+                except Exception as exc:
+                    return exc, client_cls
+
+    def modeles_appeles(self, client_cls):
+        return [c.kwargs["model"] for c in client_cls.return_value.models.generate_content.call_args_list]
+
+    def test_modele_retire_on_passe_au_secours(self):
+        resultat, client_cls = self.appeler([ErreurGemini(404), MagicMock(text='{"plan": []}')])
+        self.assertEqual(resultat, '{"plan": []}')
+        self.assertEqual(self.modeles_appeles(client_cls), ["principal", "secours-1"])
+
+    def test_service_sature_on_essaie_tous_les_modeles(self):
+        resultat, client_cls = self.appeler([ErreurGemini(503), ErreurGemini(504), ErreurGemini(429)])
+        self.assertIsInstance(resultat, LLMError)
+        self.assertIn("très sollicité", str(resultat))
+        self.assertEqual(self.modeles_appeles(client_cls), ["principal", "secours-1", "secours-2"])
+
+    def test_cle_refusee_erreur_de_configuration_sans_insister(self):
+        resultat, client_cls = self.appeler([ErreurGemini(403)])
+        self.assertIsInstance(resultat, ConfigurationIAError)
+        self.assertEqual(self.modeles_appeles(client_cls), ["principal"])
+
+    def test_chaque_essai_limite_pour_laisser_place_au_secours(self):
+        resultat, client_cls = self.appeler([ErreurGemini(504), MagicMock(text="{}")])
+        delais = [c.kwargs["http_options"].timeout for c in client_cls.call_args_list]
+        self.assertEqual(delais[0], 25000)  # 25 s au plus pour le premier modèle
+        self.assertLessEqual(sum(delais), 50000)  # jamais plus que le budget total
+
+
 # --- Base de données : fixtures communes ------------------------------------
 
 def creer_affectation(nom_utilisateur="prof1", role=Utilisateur.Role.PROFESSEUR):
