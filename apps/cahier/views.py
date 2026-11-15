@@ -10,6 +10,8 @@ from django.views.decorators.http import require_POST
 from apps.comptes.models import Utilisateur
 from apps.comptes.permissions import role_requis
 
+from apps.comptes.visa import marquer_vu
+
 from .forms import SeanceForm
 from .models import Seance, SeanceHistorique
 
@@ -54,17 +56,17 @@ def detail_seance(request, seance_id):
     return render(
         request,
         "cahier/seance_detail.html",
-        {"seance": seance, "peut_modifier": _peut_modifier(request.user, seance)},
+        {"seance": seance, "peut_modifier": _peut_modifier(request.user, seance),
+         "peut_viser": request.user.est_administrateur},
     )
 
 
 # --- Saisie des séances ---------------------------------------------------------------
 
 def _peut_modifier(utilisateur, seance):
-    """Le professeur de l'affectation et l'administrateur peuvent modifier une séance."""
-    return utilisateur.est_administrateur or (
-        utilisateur.est_professeur and seance.affectation.professeur_id == utilisateur.id
-    )
+    """Seul le professeur de l'affectation modifie une séance ; l'administration la consulte
+    et peut la marquer comme vue."""
+    return utilisateur.est_professeur and seance.affectation.professeur_id == utilisateur.id
 
 
 def _seance_modifiable(request, seance_id):
@@ -91,11 +93,11 @@ def _photo(seance):
 
 
 def _professeur_du_formulaire(utilisateur):
-    """Un professeur ne voit que ses affectations ; l'administrateur les voit toutes."""
-    return utilisateur if utilisateur.est_professeur else None
+    """Un professeur ne voit que ses propres affectations."""
+    return utilisateur
 
 
-@role_requis(Role.PROFESSEUR, Role.ADMINISTRATEUR)
+@role_requis(Role.PROFESSEUR)
 def creer_seance(request):
     form = SeanceForm(request.POST or None, professeur=_professeur_du_formulaire(request.user))
     if request.method == "POST" and form.is_valid():
@@ -105,7 +107,7 @@ def creer_seance(request):
     return render(request, "cahier/seance_form.html", {"form": form, "seance": None})
 
 
-@role_requis(Role.PROFESSEUR, Role.ADMINISTRATEUR)
+@role_requis(Role.PROFESSEUR)
 def modifier_seance(request, seance_id):
     seance = _seance_modifiable(request, seance_id)
     avant = _photo(seance)
@@ -125,7 +127,7 @@ def modifier_seance(request, seance_id):
     return render(request, "cahier/seance_form.html", {"form": form, "seance": seance})
 
 
-@role_requis(Role.PROFESSEUR, Role.ADMINISTRATEUR)
+@role_requis(Role.PROFESSEUR)
 @require_POST
 def supprimer_seance(request, seance_id):
     """Suppression logique : la séance disparaît du cahier mais reste dans l'historique."""
@@ -139,6 +141,14 @@ def supprimer_seance(request, seance_id):
         seance.save(update_fields=["supprime", "date_modification"])
     messages.success(request, "Séance supprimée.")
     return redirect("cahier:liste")
+
+
+@role_requis(Role.ADMINISTRATEUR)
+@require_POST
+def marquer_vu_seance(request, seance_id):
+    """Visa de la direction : la séance est marquée comme vue (aucune modification)."""
+    marquer_vu(request, get_object_or_404(Seance.objects.filter(supprime=False), pk=seance_id))
+    return redirect("cahier:detail", seance_id=seance_id)
 
 
 class HistoriqueFiltreForm(forms.Form):

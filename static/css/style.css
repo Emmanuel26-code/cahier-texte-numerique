@@ -400,6 +400,7 @@ h1, h2, h3 { color: var(--ink); letter-spacing: -.02em; line-height: 1.15; }
   font-weight: 700;
   white-space: nowrap;
 }
+.tag.tag-alerte { color: var(--danger); background: var(--danger-bg); }
 .tag.success { color: var(--success); background: var(--success-bg); }
 .detail-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .detail-item { display: grid; gap: 3px; }
@@ -595,6 +596,8 @@ ul.liste a { color: var(--ink); }
 .chiffre { padding: 18px; border: 1px solid var(--line-soft); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow-sm); }
 .chiffre:first-child { color: var(--cream); background: var(--forest); border-color: var(--forest); }
 .chiffre:first-child .discret { color: rgba(255, 253, 246, .7); }
+a.chiffre { color: inherit; text-decoration: none; transition: transform .2s var(--ease), box-shadow .2s var(--ease); }
+a.chiffre:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 .chiffre strong { display: block; font-size: 30px; font-weight: 800; line-height: 1.1; letter-spacing: -.02em; }
 .alerte { border-left: 4px solid var(--olive); }
 @media (max-width: 560px) {

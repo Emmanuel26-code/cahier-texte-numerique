@@ -76,7 +76,7 @@ class SaisieSeanceTests(TestCase):
                                       type_mime="application/pdf", taille_octets=1)
         plan = Plan.objects.create(document=doc, statut=Plan.Statut.VALIDE)
         point = Titre.objects.create(plan=plan, niveau=1, ordre=1, libelle="Génétique")
-        self.client.force_login(self.admin)
+        self.client.force_login(self.prof)
         self.client.post(reverse("cahier:creer"), self.donnees(points_du_plan=[point.pk]))
         self.assertFalse(Seance.objects.exists())
 
@@ -97,10 +97,15 @@ class SaisieSeanceTests(TestCase):
         self.client.force_login(self.autre_prof)
         self.assertEqual(self.client.get(reverse("cahier:modifier", args=[seance.pk])).status_code, 404)
 
-    def test_administrateur_peut_modifier(self):
+    def test_administrateur_consulte_sans_modifier(self):
         seance = self.seance()
         self.client.force_login(self.admin)
-        self.assertEqual(self.client.get(reverse("cahier:modifier", args=[seance.pk])).status_code, 200)
+        self.assertEqual(self.client.get(reverse("cahier:detail", args=[seance.pk])).status_code, 200)
+        self.assertEqual(self.client.get(reverse("cahier:creer")).status_code, 403)
+        self.assertEqual(self.client.get(reverse("cahier:modifier", args=[seance.pk])).status_code, 403)
+        self.assertEqual(self.client.post(reverse("cahier:supprimer", args=[seance.pk])).status_code, 403)
+        seance.refresh_from_db()
+        self.assertFalse(seance.supprime)
 
     # --- suppression
     def test_suppression_logique_et_historisee(self):
@@ -125,3 +130,67 @@ class SaisieSeanceTests(TestCase):
         self.client.force_login(self.eleve)
         self.assertNotContains(self.client.get(reverse("cahier:detail", args=[seance.pk])),
                                reverse("cahier:modifier", args=[seance.pk]))
+
+
+class VisaDirectionTests(TestCase):
+    """L'administration consulte les séances, cours et plans et peut les marquer comme vus."""
+
+    @classmethod
+    def setUpTestData(cls):
+        annee = AnneeScolaire.objects.create(
+            libelle="2026-2027", date_debut=datetime.date(2026, 9, 1), date_fin=datetime.date(2027, 7, 31))
+        classe = Classe.objects.create(nom="Tle A", annee=annee)
+        cls.prof = utilisateur("prof-visa", Role.PROFESSEUR)
+        cls.admin = utilisateur("admin-visa", Role.ADMINISTRATEUR)
+        cls.aff = Affectation.objects.create(professeur=cls.prof, classe=classe, matiere=Matiere.objects.create(nom="Philo"))
+        cls.seance = Seance.objects.create(affectation=cls.aff, date_seance=datetime.date(2026, 10, 12),
+                                           duree_minutes=60, titre="Le bonheur", contenu_traite="Introduction")
+        cls.document = Document.objects.create(affectation=cls.aff, nom_original="c.pdf", fichier="documents/c.pdf",
+                                               type_mime="application/pdf", taille_octets=1)
+        cls.plan = Plan.objects.create(document=cls.document)
+
+    def test_admin_marque_une_seance_vue(self):
+        self.client.force_login(self.admin)
+        page = self.client.get(reverse("cahier:detail", args=[self.seance.pk]))
+        self.assertContains(page, "Marquer comme vu")
+        self.assertNotContains(page, reverse("cahier:modifier", args=[self.seance.pk]))
+        self.client.post(reverse("cahier:marquer_vu", args=[self.seance.pk]))
+        self.seance.refresh_from_db()
+        self.assertEqual(self.seance.vu_par, self.admin)
+        self.assertIsNotNone(self.seance.vu_le)
+        self.client.force_login(self.prof)  # le professeur voit le visa
+        self.assertContains(self.client.get(reverse("cahier:detail", args=[self.seance.pk])), "Vu par la direction le")
+
+    def test_admin_marque_un_cours_et_un_plan_vus(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse("documents:marquer_vu", args=[self.document.pk]))
+        self.client.post(reverse("plans:marquer_vu", args=[self.plan.pk]))
+        self.document.refresh_from_db()
+        self.plan.refresh_from_db()
+        self.assertIsNotNone(self.document.vu_le)
+        self.assertIsNotNone(self.plan.vu_le)
+        self.assertEqual(self.plan.statut, Plan.Statut.PROPOSE)  # rien d'autre n'a changé
+
+    def test_admin_ne_peut_pas_valider_un_plan(self):
+        self.client.force_login(self.admin)
+        page = self.client.get(reverse("plans:detail", args=[self.plan.pk]))
+        self.assertNotContains(page, "Valider le plan")
+        reponse = self.client.post(reverse("plans:detail", args=[self.plan.pk]), {"action": "valider"})
+        self.assertEqual(reponse.status_code, 404)
+        self.plan.refresh_from_db()
+        self.assertEqual(self.plan.statut, Plan.Statut.PROPOSE)
+
+    def test_seul_l_admin_peut_marquer_vu(self):
+        self.client.force_login(self.prof)
+        self.assertEqual(self.client.post(reverse("cahier:marquer_vu", args=[self.seance.pk])).status_code, 403)
+        self.seance.refresh_from_db()
+        self.assertIsNone(self.seance.vu_le)
+
+    def test_premier_visa_conserve(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse("cahier:marquer_vu", args=[self.seance.pk]))
+        self.seance.refresh_from_db()
+        premier = self.seance.vu_le
+        self.client.post(reverse("cahier:marquer_vu", args=[self.seance.pk]))
+        self.seance.refresh_from_db()
+        self.assertEqual(self.seance.vu_le, premier)

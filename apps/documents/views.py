@@ -4,13 +4,18 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404
+from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
 from apps.academique.models import Affectation
 from apps.comptes.models import Utilisateur
 from apps.comptes.permissions import role_requis
+
+from apps.comptes.visa import marquer_vu
 
 from .forms import DocumentForm
 from .models import Document
@@ -18,9 +23,10 @@ from .models import Document
 Role = Utilisateur.Role
 
 
-@role_requis(Role.PROFESSEUR, Role.ADMINISTRATEUR)
+@role_requis(Role.PROFESSEUR)
 def importer(request):
-    professeur = request.user if request.user.role == Role.PROFESSEUR else None
+    """Seuls les professeurs importent leurs cours ; l'administration les consulte."""
+    professeur = request.user
     if request.method == "POST":
         form = DocumentForm(request.POST, request.FILES, professeur=professeur)
         if form.is_valid():
@@ -56,16 +62,14 @@ def liste(request):
         documents = documents.filter(chapitre__icontains=chapitre)
 
     form = None
-    if request.method == "POST":
-        professeur = request.user if request.user.role == Role.PROFESSEUR else None
-        form = DocumentForm(request.POST, request.FILES, professeur=professeur)
-        if form.is_valid():
+    if request.user.est_professeur:
+        form = DocumentForm(request.POST or None, request.FILES or None, professeur=request.user)
+        if request.method == "POST" and form.is_valid():
             form.save()
             messages.success(request, "Document importé avec succès.")
             return redirect("documents:liste")
-    else:
-        professeur = request.user if request.user.role == Role.PROFESSEUR else None
-        form = DocumentForm(professeur=professeur)
+    elif request.method == "POST":
+        raise PermissionDenied  # l'administration consulte les cours sans en importer
 
     selected = None
     selected_id = request.GET.get("document")
@@ -133,3 +137,11 @@ def telecharger(request, document_id):
         filename=document.nom_original or f"document-{document.pk}{extension}",
         content_type=document.type_mime or "application/octet-stream",
     )
+
+
+@role_requis(Role.ADMINISTRATEUR)
+@require_POST
+def marquer_vu_document(request, document_id):
+    """Visa de la direction : le cours est marqué comme vu (aucune modification)."""
+    marquer_vu(request, get_object_or_404(Document, pk=document_id))
+    return redirect(f"{reverse('documents:liste')}?document={document_id}")

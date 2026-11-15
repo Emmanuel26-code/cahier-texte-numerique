@@ -1,0 +1,6 @@
+{% load interface %}{% comment %}Visa de la direction. Variables : objet (séance, cours ou plan), url (marquer vu), peut_viser.{% endcomment %}
+{% if objet.vu_le %}
+  <span class="tag success" title="Vu par {{ objet.vu_par.get_full_name|default:objet.vu_par.email|default:'la direction' }}">{% icone "valider" 14 %} Vu par la direction le {{ objet.vu_le|date:"d/m/Y" }}</span>
+{% elif peut_viser %}
+  <form method="post" action="{{ url }}">{% csrf_token %}<button class="button" type="submit">{% icone "valider" %} Marquer comme vu</button></form>
+{% endif %}

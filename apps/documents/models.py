@@ -2,6 +2,7 @@ import mimetypes
 import os
 import uuid
 
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django.utils.text import get_valid_filename
@@ -45,6 +46,12 @@ class Document(models.Model):
     type_mime = models.CharField(max_length=100, editable=False)
     taille_octets = models.PositiveIntegerField(editable=False)
     date_import = models.DateTimeField(auto_now_add=True)
+    # Visa de la direction : l'administrateur consulte et marque « vu », sans modifier.
+    vu_le = models.DateTimeField("vu par la direction le", null=True, blank=True)
+    vu_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="+", verbose_name="vu par",
+    )
 
     class Meta:
         ordering = ["-date_import"]

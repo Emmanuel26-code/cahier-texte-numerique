@@ -65,15 +65,15 @@ class ImportDocumentTests(TestCase):
         self.assertEqual(doc.type_mime, "text/plain")
         self.assertEqual(doc.taille_octets, len(b"Introduction\nPartie 1"))
 
-    def test_administrateur_peut_importer_sur_une_affectation(self):
+    def test_administrateur_ne_peut_pas_importer(self):
         administrateur = Utilisateur.objects.create_user(
             "admin-import", "admin-import@example.com", "MotDePasse-Solide-2026",
             role="administrateur",
         )
         self.client.force_login(administrateur)
-        reponse = self.envoyer("cours-admin.txt", b"Support de cours")
-        self.assertRedirects(reponse, "/documents/")
-        self.assertEqual(Document.objects.get().affectation, self.affectation)
+        self.assertEqual(self.envoyer("cours-admin.txt", b"Support de cours").status_code, 403)
+        self.assertEqual(self.client.post("/documents/", {}).status_code, 403)
+        self.assertFalse(Document.objects.exists())
 
     def test_import_pdf_et_docx_acceptes(self):
         self.envoyer("cours.pdf", PDF_VALIDE)
