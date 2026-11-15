@@ -24,7 +24,7 @@ class InscriptionForm(UserCreationForm):
         self.fields["role"].widget = forms.RadioSelect(choices=self.fields["role"].choices)
         self.fields["first_name"].required = True
         self.fields["last_name"].required = True
-        self.fields["password1"].help_text = "8 caractères minimum, pas uniquement des chiffres."
+        self.fields["password1"].help_text = "8 caractères minimum."
         self.fields["password2"].label = "Confirmer le mot de passe"
         self.fields["password2"].help_text = ""
         autocompletes = {"first_name": "given-name", "last_name": "family-name", "email": "email",
@@ -76,7 +76,7 @@ class NouveauMotDePasseForm(SetPasswordForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["new_password1"].label = "Nouveau mot de passe"
-        self.fields["new_password1"].help_text = "8 caractères minimum, pas uniquement des chiffres."
+        self.fields["new_password1"].help_text = "8 caractères minimum."
         self.fields["new_password1"].widget.attrs["autocomplete"] = "new-password"
         self.fields["new_password2"].label = "Confirmer le nouveau mot de passe"
         self.fields["new_password2"].help_text = ""

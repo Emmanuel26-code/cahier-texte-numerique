@@ -5,7 +5,9 @@ y injectent un faux fournisseur, et changer de modèle ou de fournisseur plus ta
 n'impose de toucher qu'à ce fichier.
 """
 import logging
+import math
 import re
+import time
 
 from django.conf import settings
 
@@ -35,12 +37,29 @@ Règles :
 """
 
 
-class FournisseurGemini:
-    """Fournisseur d'IA basé sur l'API Gemini (bibliothèque `google-genai`)."""
+# Codes HTTP de Gemini : clé refusée -> problème de configuration ; modèle retiré,
+# quota ou service saturé -> on essaie le modèle de secours suivant.
+CODES_CLE_REFUSEE = {401, 403}
+CODES_MODELE_SUIVANT = {404, 408, 429, 500, 502, 503, 504}
+DELAI_MAX_PAR_MODELE = 25  # secondes : laisse le temps d'essayer un modèle de secours
+DELAI_MINIMAL = 5  # en dessous, inutile de lancer un nouvel essai
 
-    def __init__(self, cle_api=None, modele=None, delai_secondes=None):
+
+class FournisseurGemini:
+    """Fournisseur d'IA basé sur l'API Gemini (bibliothèque `google-genai`).
+
+    Google retire régulièrement d'anciens modèles et les plus récents sont parfois
+    saturés pour les comptes gratuits : on essaie donc le modèle principal, puis les
+    modèles de secours, sans dépasser `IA_TIMEOUT_SECONDS` au total (une fonction
+    Vercel est coupée au bout de 60 s).
+    """
+
+    def __init__(self, cle_api=None, modele=None, delai_secondes=None, modeles_secours=None):
         self.cle_api = cle_api if cle_api is not None else settings.GEMINI_API_KEY
-        self.modele = modele or settings.GEMINI_MODEL
+        principal = modele or settings.GEMINI_MODEL
+        secours = settings.GEMINI_MODELES_SECOURS if modeles_secours is None else modeles_secours
+        self.modeles = list(dict.fromkeys([principal, *secours]))  # sans doublon, ordre conservé
+        self.modele = principal
         self.delai_secondes = delai_secondes or settings.IA_TIMEOUT_SECONDS
         if not self.cle_api:
             raise ConfigurationIAError(
@@ -51,28 +70,44 @@ class FournisseurGemini:
         from google import genai
         from google.genai import types
 
-        try:
-            client = genai.Client(
-                api_key=self.cle_api,
-                http_options=types.HttpOptions(timeout=int(self.delai_secondes * 1000)),
-            )
-            reponse = client.models.generate_content(
-                model=self.modele,
-                contents=_encadrer_cours(contenu),
-                config=types.GenerateContentConfig(
-                    system_instruction=instructions,
-                    response_mime_type="application/json",
-                    temperature=0.1,
-                ),
-            )
-        except Exception as exc:  # réseau, quota, clé invalide, délai dépassé...
-            # On ne journalise que le type et le code d'erreur, jamais le message complet :
-            # il pourrait contenir la clé API ou un extrait du cours.
-            logger.warning(
-                "Échec de l'appel Gemini (%s, code=%s)", type(exc).__name__, getattr(exc, "code", None)
-            )
-            raise LLMError("Le service d'IA est momentanément indisponible. Réessayez dans un instant.") from exc
-        return reponse.text or ""
+        debut = time.monotonic()
+        derniere_erreur = None
+        for rang, modele in enumerate(self.modeles):
+            restant = self.delai_secondes - (time.monotonic() - debut)
+            if restant < DELAI_MINIMAL and rang > 0:
+                break
+            dernier = rang == len(self.modeles) - 1
+            delai = restant if dernier else min(restant, DELAI_MAX_PAR_MODELE)
+            try:
+                client = genai.Client(
+                    api_key=self.cle_api,
+                    http_options=types.HttpOptions(timeout=math.ceil(max(delai, 1)) * 1000),
+                )
+                reponse = client.models.generate_content(
+                    model=modele,
+                    contents=_encadrer_cours(contenu),
+                    config=types.GenerateContentConfig(
+                        system_instruction=instructions,
+                        response_mime_type="application/json",
+                        temperature=0.1,
+                    ),
+                )
+                if rang:
+                    logger.info("Plan généré avec le modèle de secours %s", modele)
+                return reponse.text or ""
+            except Exception as exc:  # réseau, quota, clé invalide, délai dépassé, modèle retiré...
+                code = getattr(exc, "code", None)
+                # On ne journalise que le modèle, le type et le code d'erreur, jamais le message
+                # complet : il pourrait contenir la clé API ou un extrait du cours.
+                logger.warning("Échec de l'appel Gemini (%s, %s, code=%s)", modele, type(exc).__name__, code)
+                derniere_erreur = exc
+                if code in CODES_CLE_REFUSEE or (code == 400 and "API key" in str(exc)):
+                    raise ConfigurationIAError("La clé GEMINI_API_KEY est refusée par Google.") from exc
+                if code is not None and code not in CODES_MODELE_SUIVANT:
+                    break  # requête invalide : un autre modèle n'y changera rien
+        raise LLMError(
+            "Le service d'IA est très sollicité en ce moment. Réessayez dans quelques minutes."
+        ) from derniere_erreur
 
 
 _BALISE_COURS = re.compile(r"</?\s*cours\s*>", re.IGNORECASE)

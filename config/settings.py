@@ -262,7 +262,10 @@ LOGGING = {
 
 # --- Module IA (plan de cours) — Google Gemini ------------------------------------------
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+# gemini-2.5-flash a été retiré par Google ; les modèles les plus récents (3.7, 3.8)
+# sont souvent saturés pour les comptes gratuits. Modèles de secours essayés dans l'ordre.
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
+GEMINI_MODELES_SECOURS = env_liste("GEMINI_MODELES_SECOURS", "gemini-3.5-flash,gemini-3.1-flash-lite")
 IA_TIMEOUT_SECONDS = int(os.environ.get("IA_TIMEOUT_SECONDS", "60"))
 IA_MAX_CHARS = int(os.environ.get("IA_MAX_CHARS", "60000"))  # taille max du texte envoyé à l'IA
 IA_MAX_FILE_BYTES = int(os.environ.get("IA_MAX_FILE_BYTES", str(10 * 1024 * 1024)))  # fichier max analysé
