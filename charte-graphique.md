@@ -1,27 +1,28 @@
 # Charte graphique
 
-## Framework CSS
-Bootstrap 5.3 (choisi pour sa simplicité et son responsive intégré).
+## Nom
+CahierPro une fois connecté ; « Cahier de texte numérique » sur les pages publiques.
 
 ## Couleurs
-- Couleur principale : #2864F0 (bleu)
-- Couleur principale au survol : #174BD1
-- Fond de page : #F5F6F8
-- Surface des panneaux : #FFFFFF
-- Texte : #1F2937
-- Bordures : #E4E7EC
-- Erreurs : #B00020
-
-## Composants
-- Navigation latérale fixe sur ordinateur, repliable sur mobile.
-- Panneaux blancs à coins arrondis et tableaux compacts.
-- Formulaires et actions conçus pour les écrans larges comme les téléphones.
+- Vert principal : #1B7A57 (survol : #145C41, fond léger : #E8F4EE)
+- Orange d'accent : #F39C32 (fond léger : #FFF1DF)
+- Fond de page : #F4F6F5
+- Surfaces : #FFFFFF
+- Texte : #23302B (secondaire : #6B7A74)
+- Bordures : #E1E8E4
+- Erreurs : #A33A2C
 
 ## Police
-Segoe UI, sans-serif
+Manrope (Google Fonts), graisses 400 à 800.
+
+## Composants
+- Menu latéral blanc sur ordinateur, tiroir sur mobile ; page active en vert.
+- Cartes blanches à grands arrondis (22 px), boutons en pastille.
+- Icônes dessinées (SVG), aucun émoji.
+- Tableaux transformés en cartes sur téléphone.
 
 ## Langue
 Toute l'interface est en français.
 
 ## Responsive
-Le site s'adapte au téléphone, à la tablette et à l'ordinateur.
+Mobile d'abord : champs en 16 px, zones tactiles de 44 px, zones sûres des encoches.
