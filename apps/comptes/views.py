@@ -2,12 +2,13 @@ import logging
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import login
 from django.contrib.auth import views as auth_views
+from django.core import signing
+from django.views.decorators.http import require_POST
 from django.core.cache import cache
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 
 from apps.academique.models import Classe
 from .forms import (
@@ -18,7 +19,17 @@ from .forms import (
     NouveauMotDePasseForm,
 )
 from .models import Utilisateur
+from .classes import affecter_classe, classes_proposees
 from .permissions import role_requis
+from .securite import (
+    adresse_ip,
+    compter,
+    envoi_email_possible,
+    envoyer_confirmation,
+    lire_jeton_confirmation,
+    prevenir_administration,
+    prevenir_professeur_valide,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -82,20 +93,105 @@ def utilisateurs(request):
     )
 
 
+LIMITE_INSCRIPTIONS_PAR_HEURE = 5
+
+
 def inscription(request):
+    """Inscription publique : l'adresse e-mail est confirmée par un lien, et un compte
+    professeur doit en plus être validé par l'administration avant la première connexion."""
     if request.user.is_authenticated:
         return redirect("tableau_de_bord:accueil")
 
-    if request.method == "POST":
-        form = InscriptionForm(request.POST)
-        if form.is_valid():
-            utilisateur = form.save() 
-            login(request, utilisateur)  
-            return redirect("tableau_de_bord:accueil")
-    else:
-        form = InscriptionForm()
+    form = InscriptionForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        if compter(f"inscription-ip-{adresse_ip(request)}", 3600) > LIMITE_INSCRIPTIONS_PAR_HEURE:
+            form.add_error(None, "Trop d’inscriptions depuis cette connexion. Réessayez dans une heure.")
+        else:
+            utilisateur = form.save(commit=False)
+            # Sans service d'e-mail (préversions), la confirmation est impossible : on la saute.
+            utilisateur.email_verifie = not envoi_email_possible()
+            utilisateur.en_attente_validation = utilisateur.role == Utilisateur.Role.PROFESSEUR
+            utilisateur.save()
+            if utilisateur.role == Utilisateur.Role.ELEVE:
+                affecter_classe(utilisateur, form.cleaned_data["classe"])
+            if not utilisateur.email_verifie:
+                try:
+                    envoyer_confirmation(request, utilisateur)
+                except Exception:
+                    logger.exception("Envoi de l'e-mail de confirmation impossible")
+            elif utilisateur.en_attente_validation:
+                prevenir_administration(request, utilisateur)
+            request.session["inscription_email"] = utilisateur.email
+            request.session["inscription_professeur"] = utilisateur.en_attente_validation
+            return redirect("inscription_envoyee")
 
-    return render(request, "comptes/inscription.html", {"form": form})
+    return render(request, "comptes/inscription.html", {"form": form, "classes_existantes": classes_proposees()})
+
+
+def inscription_envoyee(request):
+    return render(request, "comptes/inscription_envoyee.html", {
+        "email": request.session.get("inscription_email"),
+        "professeur": request.session.get("inscription_professeur"),
+        "confirmation": envoi_email_possible(),
+    })
+
+
+def confirmer_email(request, jeton):
+    """Lien reçu par e-mail. Pas de connexion automatique : un antivirus de messagerie
+    qui « clique » sur le lien ne doit pas ouvrir de session."""
+    try:
+        compte_id, email = lire_jeton_confirmation(jeton)
+    except signing.SignatureExpired:
+        return render(request, "comptes/email_confirme.html", {"statut": "expire"})
+    except signing.BadSignature:
+        return render(request, "comptes/email_confirme.html", {"statut": "invalide"})
+    compte = Utilisateur.objects.filter(pk=compte_id, email__iexact=email).first()
+    if compte is None:
+        return render(request, "comptes/email_confirme.html", {"statut": "invalide"})
+    if not compte.email_verifie:
+        compte.email_verifie = True
+        compte.save(update_fields=["email_verifie"])
+        if compte.en_attente_validation:
+            prevenir_administration(request, compte)
+    statut = "attente" if compte.en_attente_validation else "ok"
+    return render(request, "comptes/email_confirme.html", {"statut": statut})
+
+
+@require_POST
+def renvoyer_confirmation(request):
+    """Renvoie le lien de confirmation (même réponse que l'adresse existe ou non)."""
+    email = (request.POST.get("email") or "").strip().lower()
+    if email and compter(f"renvoi-confirmation-{adresse_ip(request)}", 3600) <= 5:
+        compte = Utilisateur.objects.filter(email__iexact=email, email_verifie=False, is_active=True).first()
+        if compte:
+            try:
+                envoyer_confirmation(request, compte)
+            except Exception:
+                logger.exception("Renvoi de l'e-mail de confirmation impossible")
+    messages.success(request, "Si cette adresse attend une confirmation, un nouveau lien vient d’être envoyé.")
+    return redirect("login")
+
+
+@role_requis(Utilisateur.Role.ADMINISTRATEUR)
+@require_POST
+def valider_professeur(request, compte_id):
+    compte = get_object_or_404(Utilisateur, pk=compte_id, en_attente_validation=True)
+    compte.en_attente_validation = False
+    compte.save(update_fields=["en_attente_validation"])
+    if compte.email_verifie:
+        prevenir_professeur_valide(request, compte)
+    messages.success(request, "Compte professeur validé : la personne peut maintenant se connecter.")
+    return redirect(f"{reverse('utilisateurs')}?modifier={compte.pk}")
+
+
+@role_requis(Utilisateur.Role.ADMINISTRATEUR)
+@require_POST
+def refuser_professeur(request, compte_id):
+    """Refuse une demande de compte professeur : le compte, qui n'a encore aucune donnée, est supprimé."""
+    compte = get_object_or_404(Utilisateur, pk=compte_id, en_attente_validation=True)
+    compte.delete()
+    messages.success(request, "Demande de compte professeur refusée : le compte a été supprimé.")
+    return redirect("utilisateurs")
 
 # --- Connexion avec « Rester connecté » --------------------------------------------------
 
@@ -103,6 +199,12 @@ class Connexion(auth_views.LoginView):
     template_name = "comptes/connexion.html"
     authentication_form = ConnexionForm
     redirect_authenticated_user = True
+
+    def get_context_data(self, **kwargs):
+        contexte = super().get_context_data(**kwargs)
+        form = contexte.get("form")
+        contexte["email_non_verifie"] = bool(form and form.has_error("__all__", "email_non_verifie"))
+        return contexte
 
     def form_valid(self, form):
         reponse = super().form_valid(form)

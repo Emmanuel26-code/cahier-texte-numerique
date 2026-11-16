@@ -26,6 +26,10 @@
       {% include "partials/champ.html" with champ=form.first_name %}
       {% include "partials/champ.html" with champ=form.last_name %}
     </div>
+    <div data-champ-eleve>
+      {% include "partials/champ.html" with champ=form.classe %}
+      <datalist id="classes-existantes">{% for nom in classes_existantes %}<option value="{{ nom }}">{% endfor %}</datalist>
+    </div>
     {% include "partials/champ.html" with champ=form.email %}
     {% include "partials/champ.html" with champ=form.password1 mdp=True %}
     {% include "partials/champ.html" with champ=form.password2 mdp=True %}

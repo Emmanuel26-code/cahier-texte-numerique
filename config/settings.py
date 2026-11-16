@@ -71,6 +71,8 @@ INSTALLED_APPS = [
 ]
 
 AUTH_USER_MODEL = "comptes.Utilisateur"
+# Connexion par e-mail + limite de tentatives + e-mail confirmé + professeur validé
+AUTHENTICATION_BACKENDS = ["apps.comptes.securite.BackendConnexion"]
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "tableau_de_bord:accueil"  # oriente chaque rôle vers son tableau de bord
 LOGOUT_REDIRECT_URL = "login"

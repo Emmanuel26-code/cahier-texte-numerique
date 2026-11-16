@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, SetPasswordForm, UserCreationForm
 from django.contrib.auth.password_validation import validate_password
 
@@ -14,6 +15,12 @@ class InscriptionForm(UserCreationForm):
         model = Utilisateur
         fields = ("first_name", "last_name", "email", "role")
         labels = {"first_name": "Prénom", "last_name": "Nom", "email": "Adresse e-mail", "role": "Je suis"}
+
+    classe = forms.CharField(
+        label="Ma classe", max_length=50, required=False,
+        help_text="Par exemple 6e A. Choisissez dans la liste ou écrivez le nom exact de votre classe.",
+        widget=forms.TextInput(attrs={"list": "classes-existantes", "autocomplete": "off", "placeholder": "6e A"}),
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -39,6 +46,12 @@ class InscriptionForm(UserCreationForm):
             raise forms.ValidationError("Un compte existe déjà avec cette adresse e-mail.")
         return email
 
+    def clean(self):
+        donnees = super().clean()
+        if donnees.get("role") == Utilisateur.Role.ELEVE and not " ".join((donnees.get("classe") or "").split()):
+            self.add_error("classe", "Indiquez votre classe.")
+        return donnees
+
 
 class ConnexionForm(AuthenticationForm):
     """Connexion avec l'adresse e-mail."""
@@ -57,8 +70,36 @@ class ConnexionForm(AuthenticationForm):
         })
         self.fields["password"].widget.attrs["autocomplete"] = "current-password"
 
-
     rester_connecte = forms.BooleanField(label="Rester connecté", required=False, initial=True)
+
+    def clean(self):
+        from .securite import connexion_bloquee
+
+        email = (self.cleaned_data.get("username") or "").strip()
+        mot_de_passe = self.cleaned_data.get("password")
+        if email and connexion_bloquee(self.request, email):
+            raise ValidationError(
+                "Réessayez dans 15 minutes.",
+                code="bloque",
+            )
+        try:
+            return super().clean()
+        except ValidationError:
+            # Mot de passe juste mais compte pas encore utilisable : on explique pourquoi.
+            compte = Utilisateur.objects.filter(email__iexact=email).first() if email else None
+            if compte and compte.is_active and mot_de_passe and compte.check_password(mot_de_passe):
+                if not compte.email_verifie:
+                    raise ValidationError(
+                        "Confirmez d’abord votre adresse e-mail avec le lien que nous vous avons envoyé.",
+                        code="email_non_verifie",
+                    )
+                if compte.en_attente_validation:
+                    raise ValidationError(
+                        "Votre compte professeur attend la validation de l’administration. "
+                        "Vous recevrez un e-mail dès qu’il sera validé.",
+                        code="en_attente",
+                    )
+            raise
 
 
 class DemandeReinitialisationForm(PasswordResetForm):

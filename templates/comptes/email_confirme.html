@@ -1,0 +1,22 @@
+{% extends "comptes/_auth.html" %}
+{% block titre %}Confirmation de l’adresse e-mail · Cahier de texte numérique{% endblock %}
+{% block accroche %}Merci, <em>c’est noté.</em>{% endblock %}
+{% block formulaire %}
+  {% if statut == "ok" %}
+    <h1>Adresse confirmée</h1>
+    <p class="sous-titre">Votre compte est activé. Vous pouvez maintenant vous connecter.</p>
+    <a class="button block" href="{% url 'login' %}">Se connecter</a>
+  {% elif statut == "attente" %}
+    <h1>Adresse confirmée</h1>
+    <p class="sous-titre">Votre compte professeur attend maintenant la validation de l’administration. Vous recevrez un e-mail dès qu’il sera validé.</p>
+    <a class="button block secondary" href="{% url 'accueil' %}">Retour à l’accueil</a>
+  {% elif statut == "expire" %}
+    <h1>Lien expiré</h1>
+    <p class="sous-titre">Ce lien de confirmation a plus de 3 jours. Demandez-en un nouveau :</p>
+    {% include "comptes/_renvoyer_confirmation.html" %}
+  {% else %}
+    <h1>Lien invalide</h1>
+    <p class="sous-titre">Ce lien de confirmation n’est pas valable. Vérifiez qu’il a été copié en entier, ou demandez-en un nouveau :</p>
+    {% include "comptes/_renvoyer_confirmation.html" %}
+  {% endif %}
+{% endblock %}

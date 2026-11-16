@@ -80,6 +80,18 @@
     });
   });
 
+  /* --- Inscription : la classe ne concerne que les élèves ----------------- */
+  var champClasse = document.querySelector("[data-champ-eleve]");
+  if (champClasse) {
+    var radios = document.querySelectorAll("input[name=role]");
+    var majClasse = function () {
+      var choix = document.querySelector("input[name=role]:checked");
+      champClasse.hidden = !!choix && choix.value !== "eleve";
+    };
+    radios.forEach(function (r) { r.addEventListener("change", majClasse); });
+    majClasse();
+  }
+
   /* --- Bouton « en cours » à l'envoi d'un formulaire ------------------------ */
   document.querySelectorAll("form[data-chargement]").forEach(function (f) {
     f.addEventListener("submit", function () {
