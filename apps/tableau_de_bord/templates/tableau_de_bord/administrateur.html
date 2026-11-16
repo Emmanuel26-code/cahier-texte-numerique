@@ -19,7 +19,6 @@
   <div class="chiffre"><strong>{{ nb_documents }}</strong><span class="discret">document{{ nb_documents|pluralize }}</span></div>
   <div class="chiffre"><strong>{{ nb_plans_valides }}</strong><span class="discret">plan{{ nb_plans_valides|pluralize }} validé{{ nb_plans_valides|pluralize }}</span></div>
   <a class="chiffre" href="{% url 'cahier:liste' %}"><strong>{{ nb_seances_a_viser }}</strong><span class="discret">séance{{ nb_seances_a_viser|pluralize }} à viser</span></a>
-  <a class="chiffre" href="{% url 'documents:liste' %}"><strong>{{ nb_cours_a_viser }}</strong><span class="discret">cours à viser</span></a>
   <div class="chiffre"><strong>{{ nb_plans_en_attente }}</strong><span class="discret">plan{{ nb_plans_en_attente|pluralize }} en attente</span></div>
 </section>
 
