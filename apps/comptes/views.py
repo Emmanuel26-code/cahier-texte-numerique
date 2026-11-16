@@ -205,7 +205,9 @@ def refuser_professeur(request, compte_id):
 class Connexion(auth_views.LoginView):
     template_name = "comptes/connexion.html"
     authentication_form = ConnexionForm
-    redirect_authenticated_user = True
+    # Déjà connecté : on affiche quand même le formulaire pour pouvoir changer de compte
+    # (lien « Se connecter » reçu par e-mail, plusieurs comptes sur un même appareil).
+    redirect_authenticated_user = False
 
     def get_context_data(self, **kwargs):
         contexte = super().get_context_data(**kwargs)

@@ -354,3 +354,16 @@ class SuppressionComptesDesactivesTests(TestCase):
         self.assertContains(page, "Supprimé le")
         self.assertContains(page, "supprimé au bout de 30 jours")
         self.assertNotContains(page, "Les mots de passe ne sont jamais affichés")
+
+
+class ChangementDeCompteTests(TestCase):
+    def test_connexion_a_un_autre_compte_depuis_une_session_ouverte(self):
+        mdp = "MotDePasse-Solide-2026"
+        prof = Utilisateur.objects.create_user(email="prof@ecole.ci", password=mdp, role=Utilisateur.Role.PROFESSEUR, email_verifie=True)
+        eleve = Utilisateur.objects.create_user(email="eleve@ecole.ci", password=mdp, role=Utilisateur.Role.ELEVE, email_verifie=True)
+        self.client.force_login(prof)
+        reponse = self.client.get("/comptes/connexion/")
+        self.assertEqual(reponse.status_code, 200)
+        self.assertContains(reponse, "pour changer de compte")
+        self.client.post("/comptes/connexion/", {"username": "eleve@ecole.ci", "password": mdp})
+        self.assertEqual(int(self.client.session["_auth_user_id"]), eleve.pk)
