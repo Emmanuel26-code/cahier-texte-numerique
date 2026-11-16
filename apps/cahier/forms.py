@@ -24,10 +24,6 @@ class SeanceForm(forms.ModelForm):
             "travail_a_faire": "Travail à faire",
             "points_du_plan": "Points du plan abordés",
         }
-        help_texts = {
-            "travail_a_faire": "Les élèves de la classe seront notifiés.",
-            "points_du_plan": "Points des plans de cours validés pour cette classe et cette matière.",
-        }
         widgets = {
             "date_seance": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "contenu_traite": forms.Textarea(attrs={"rows": 6}),

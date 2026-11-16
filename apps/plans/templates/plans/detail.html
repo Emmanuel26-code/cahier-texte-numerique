@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load interface %}
-{% block titre %}Plan de cours · {{ plan.titre }}{% endblock %}
+{% block titre %}Plan de cours · {{ plan.titre }} · CahierPro{% endblock %}
 {% block fil_ariane %}Plan de cours{% endblock %}
 {% block contenu %}
 {% with aff=plan.document.affectation %}
@@ -41,7 +41,7 @@
       {% empty %}
         <div class="empty-state">Ce plan ne contient aucun point.</div>
       {% endfor %}
-      <div class="notice">Retirer un point retire aussi ses sous-points. Une fois validé, le plan est visible par les élèves et ses points peuvent être rattachés aux séances.</div>
+      <div class="notice">Retirer un point retire aussi ses sous-points.</div>
       <div class="form-actions">
         <button class="button" type="submit" name="action" value="valider">{% icone "valider" %} Valider le plan</button>
         <button class="button secondary" type="submit" name="action" value="enregistrer">Enregistrer sans valider</button>
