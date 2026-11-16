@@ -5,8 +5,8 @@
   {% if confirmation %}
     <h1>Vérifiez votre boîte mail</h1>
     <p class="sous-titre">Nous avons envoyé un lien de confirmation{% if email %} à <strong>{{ email }}</strong>{% endif %}. Cliquez dessus pour activer votre compte (valable 3 jours).</p>
-    {% if professeur %}<div class="notice">Comme vous vous êtes inscrit en tant que professeur, l’administration devra ensuite valider votre compte. Vous recevrez un e-mail dès que ce sera fait.</div>{% endif %}
-    <div class="notice">Rien reçu ? Regardez dans les courriers indésirables (spam), ou demandez un nouveau lien depuis la page de connexion.</div>
+    {% if professeur %}<div class="notice">Votre compte professeur sera ensuite validé par l’administration.</div>{% endif %}
+    <div class="notice">Rien reçu ? Regardez dans vos spams.</div>
   {% else %}
     <h1>Inscription enregistrée</h1>
     {% if professeur %}

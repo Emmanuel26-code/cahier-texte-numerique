@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load interface %}
-{% block titre %}Utilisateurs · Cahier de texte{% endblock %}
+{% block titre %}Utilisateurs · CahierPro{% endblock %}
 {% block fil_ariane %}Utilisateurs{% endblock %}
 {% block contenu %}
 <section class="page-heading">
@@ -92,8 +92,7 @@
         {% for inscription in inscriptions %}
           <div class="field-row"><strong>{{ inscription.classe.nom }}</strong><span>Année scolaire {{ inscription.classe.annee.libelle }}</span></div>
         {% empty %}<p class="small-text muted">Aucune inscription en classe.</p>{% endfor %}
-        {% if selection.classe_demandee %}<div class="notice">Classe demandée à l’inscription : <strong>{{ selection.classe_demandee }}</strong>. L’élève y sera inscrit automatiquement dès que cette classe sera créée dans Référentiels.</div>{% endif %}
-        <div class="notice">Pour ajouter ou retirer des classes, sélectionnez-les dans le champ « Classes d’inscription » du profil puis enregistrez.</div>
+        {% if selection.classe_demandee %}<div class="notice">Classe demandée : <strong>{{ selection.classe_demandee }}</strong></div>{% endif %}
       {% else %}
         <p class="small-text muted">{% if selection %}Les inscriptions aux classes sont réservées aux profils élèves.{% else %}Sélectionnez un élève pour gérer ses inscriptions.{% endif %}</p>
       {% endif %}

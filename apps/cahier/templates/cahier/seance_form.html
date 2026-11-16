@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load interface %}
-{% block titre %}{% if seance %}Modifier la séance{% else %}Nouvelle séance{% endif %} · Cahier de texte{% endblock %}
+{% block titre %}{% if seance %}Modifier la séance{% else %}Nouvelle séance{% endif %} · CahierPro{% endblock %}
 {% block fil_ariane %}<a href="{% url 'cahier:liste' %}">Cahier de texte</a> / {% if seance %}Modifier{% else %}Nouvelle séance{% endif %}{% endblock %}
 {% block contenu %}
 <section class="page-heading">
