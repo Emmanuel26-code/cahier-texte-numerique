@@ -51,11 +51,13 @@ class InscriptionConnexionTests(TestCase):
         reponse = self.client.get("/comptes/inscription/")
         self.assertNotIn("username", reponse.context["form"].fields)
 
-    def test_deux_e_mails_identiques_a_la_casse_pres_refuses(self):
+    def test_adresse_deja_inscrite_non_revelee(self):
+        """Même réponse qu'une nouvelle inscription : on ne révèle pas qui est inscrit."""
         self.client.post("/comptes/inscription/", self.donnees)
         self.client.logout()
         reponse = self.client.post("/comptes/inscription/", {**self.donnees, "email": "AWA@example.com"})
-        self.assertContains(reponse, "Un compte existe déjà avec cette adresse e-mail.")
+        self.assertRedirects(reponse, "/comptes/inscription/envoyee/", fetch_redirect_response=False)
+        self.assertNotContains(self.client.get("/comptes/inscription/envoyee/"), "existe déjà")
         self.assertEqual(Utilisateur.objects.count(), 1)
 
     def test_identifiants_internes_uniques(self):

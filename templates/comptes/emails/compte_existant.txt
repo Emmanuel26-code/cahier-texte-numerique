@@ -1,0 +1,11 @@
+{% autoescape off %}Bonjour,
+
+Quelqu’un vient de demander la création d’un compte sur le Cahier de texte numérique avec votre adresse e-mail, alors que vous avez déjà un compte.
+
+Si c’est vous, connectez-vous : {{ connexion }}
+Mot de passe oublié ? {{ lien }}
+
+Si ce n’est pas vous, ignorez cet e-mail : votre compte n’a pas été modifié.
+
+Cahier de texte numérique
+{% endautoescape %}

@@ -161,15 +161,11 @@ class VisaDirectionTests(TestCase):
         self.client.force_login(self.prof)  # le professeur voit le visa
         self.assertContains(self.client.get(reverse("cahier:detail", args=[self.seance.pk])), "Vu par la direction le")
 
-    def test_admin_marque_un_cours_et_un_plan_vus(self):
+    def test_visa_reserve_aux_seances(self):
+        """Cours et plans se consultent sans visa : seules les séances se visent."""
         self.client.force_login(self.admin)
-        self.client.post(reverse("documents:marquer_vu", args=[self.document.pk]))
-        self.client.post(reverse("plans:marquer_vu", args=[self.plan.pk]))
-        self.document.refresh_from_db()
-        self.plan.refresh_from_db()
-        self.assertIsNotNone(self.document.vu_le)
-        self.assertIsNotNone(self.plan.vu_le)
-        self.assertEqual(self.plan.statut, Plan.Statut.PROPOSE)  # rien d'autre n'a changé
+        self.assertNotContains(self.client.get(f"/documents/?document={self.document.pk}"), "Marquer comme vu")
+        self.assertNotContains(self.client.get(reverse("plans:detail", args=[self.plan.pk])), "Marquer comme vu")
 
     def test_admin_ne_peut_pas_valider_un_plan(self):
         self.client.force_login(self.admin)

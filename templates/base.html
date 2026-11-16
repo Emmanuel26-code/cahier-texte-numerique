@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#1b7a57">
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <meta name="description" content="Cahier de texte numérique : séances, travail à faire et plans de cours de l’établissement.">
   <title>{% block titre %}{% if user.is_authenticated %}CahierPro{% else %}Cahier de texte numérique{% endif %}{% endblock %}</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%231b7a57'/%3E%3Ctext x='50%25' y='56%25' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='700' font-size='28' fill='%23ffffff'%3ECT%3C/text%3E%3C/svg%3E">
@@ -32,6 +33,11 @@
         <a href="{% url 'cahier:liste' %}" class="{% if request.resolver_match.namespace == 'cahier' and request.resolver_match.url_name != 'historique' and request.resolver_match.url_name != 'creer' %}active{% endif %}">
           <span class="nav-icon">{% icone "cahier" %}</span> Cahier de texte
         </a>
+        {% if user.est_eleve %}
+          <a href="{% url 'documents:mes_cours' %}" class="{% if request.resolver_match.url_name == 'mes_cours' %}active{% endif %}">
+            <span class="nav-icon">{% icone "documents" %}</span> Cours
+          </a>
+        {% endif %}
         {% if user.est_eleve %}
           <a href="{% url 'notifications:liste' %}" class="{% if request.resolver_match.namespace == 'notifications' %}active{% endif %}">
             <span class="nav-icon">{% icone "cloche" %}</span> Notifications
