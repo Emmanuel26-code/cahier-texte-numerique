@@ -27,7 +27,7 @@ class InscriptionConnexionTests(TestCase):
 
     def test_inscription_cree_un_compte_au_mot_de_passe_hache(self):
         reponse = self.client.post("/comptes/inscription/", self.donnees)
-        self.assertRedirects(reponse, "/tableau-de-bord/", fetch_redirect_response=False)
+        self.assertRedirects(reponse, "/comptes/inscription/envoyee/", fetch_redirect_response=False)
         u = Utilisateur.objects.get(email="awa@example.com")
         self.assertEqual(u.username, "awa")  # identifiant interne généré à partir de l'e-mail
         self.assertNotEqual(u.password, "MotDePasse-Solide-2026")  

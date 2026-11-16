@@ -1,0 +1,11 @@
+{% autoescape off %}Bonjour{% if user.first_name %} {{ user.first_name }}{% endif %},
+
+Merci de vous être inscrit sur le Cahier de texte numérique.
+
+Pour activer votre compte, confirmez votre adresse e-mail en ouvrant ce lien (valable 3 jours) :
+{{ lien }}
+
+Si vous n’êtes pas à l’origine de cette inscription, ignorez simplement cet e-mail : aucun compte ne sera activé.
+
+Cahier de texte numérique
+{% endautoescape %}

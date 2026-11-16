@@ -45,14 +45,15 @@ class TroisRolesTests(TestCase):
 class InscriptionPubliqueTests(TestCase):
     def poster(self, role, nom="nouveau"):
         return self.client.post(reverse(URL_INSCRIPTION), {
-            "first_name": "Awa", "last_name": "Test", "email": f"{nom}@exemple.ci",
+            "first_name": "Awa", "last_name": "Test", "email": f"{nom}@exemple.ci", "classe": "6e A",
             "role": role, "password1": MOT_DE_PASSE, "password2": MOT_DE_PASSE,
         })
 
     def test_inscription_professeur_acceptee(self):
         reponse = self.poster(Role.PROFESSEUR, "prof1")
-        self.assertRedirects(reponse, reverse("tableau_de_bord:accueil"), fetch_redirect_response=False)
+        self.assertRedirects(reponse, reverse("inscription_envoyee"), fetch_redirect_response=False)
         self.assertEqual(Utilisateur.objects.get(username="prof1").role, Role.PROFESSEUR)
+        self.assertTrue(Utilisateur.objects.get(username="prof1").en_attente_validation)  # à valider par l'administration
 
     def test_inscription_eleve_acceptee(self):
         self.poster(Role.ELEVE, "eleve1")

@@ -5,3 +5,6 @@ class ComptesConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.comptes"
     label = "comptes"
+
+    def ready(self):
+        from . import classes, securite  # noqa: F401  (branche les signaux)
