@@ -28,6 +28,7 @@ from .securite import (
     envoyer_confirmation,
     lire_jeton_confirmation,
     prevenir_administration,
+    prevenir_compte_existant,
     prevenir_professeur_valide,
 )
 
@@ -106,6 +107,12 @@ def inscription(request):
     if request.method == "POST" and form.is_valid():
         if compter(f"inscription-ip-{adresse_ip(request)}", 3600) > LIMITE_INSCRIPTIONS_PAR_HEURE:
             form.add_error(None, "Trop d’inscriptions depuis cette connexion. Réessayez dans une heure.")
+        elif form.adresse_deja_utilisee:
+            # Même réponse qu'une inscription réussie ; le vrai titulaire est prévenu par e-mail.
+            prevenir_compte_existant(request, form.cleaned_data["email"])
+            request.session["inscription_email"] = form.cleaned_data["email"]
+            request.session["inscription_professeur"] = form.cleaned_data.get("role") == Utilisateur.Role.PROFESSEUR
+            return redirect("inscription_envoyee")
         else:
             utilisateur = form.save(commit=False)
             # Sans service d'e-mail (préversions), la confirmation est impossible : on la saute.

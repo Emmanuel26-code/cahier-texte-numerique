@@ -1,0 +1,4 @@
+{% extends "base.html" %}
+{% block titre %}Page introuvable{% endblock %}
+{% block contenu %}{% include "partials/erreur.html" with code="404" titre="Page introuvable" texte="Cette page n’existe pas ou n’est plus disponible." %}{% endblock %}
+{% block contenu_public %}{% include "partials/erreur.html" with code="404" titre="Page introuvable" texte="Cette page n’existe pas ou n’est plus disponible." %}{% endblock %}

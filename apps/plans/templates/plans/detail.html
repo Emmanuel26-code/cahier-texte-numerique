@@ -11,8 +11,7 @@
   </div>
   <div class="form-actions" style="margin:0">
     <span class="tag {% if plan.statut == 'valide' %}success{% endif %}">{{ plan.get_statut_display }}</span>
-    {% url 'plans:marquer_vu' plan.pk as url_vu %}{% include "partials/visa.html" with objet=plan url=url_vu %}
-    {% if peut_gerer or peut_viser %}<a class="button secondary" href="{% url 'documents:liste' %}?document={{ plan.document_id }}">{% icone "retour" %} Document</a>
+    {% if peut_gerer or user.est_administrateur %}<a class="button secondary" href="{% url 'documents:liste' %}?document={{ plan.document_id }}">{% icone "retour" %} Document</a>
     {% else %}<a class="button secondary" href="{% url 'tableau_de_bord:accueil' %}">{% icone "retour" %} Tableau de bord</a>{% endif %}
   </div>
 </section>
@@ -23,7 +22,7 @@
       <h2>Structure du cours</h2>
       <p>
         {% if modifiable %}Proposé par l’IA le {{ plan.date_generation|date:"d/m/Y à H:i" }}. Corrigez les intitulés, retirez ce qui ne convient pas, puis validez.
-        {% elif plan.statut == 'valide' %}Validé le {{ plan.date_validation|date:"d/m/Y" }}.
+        {% elif plan.statut == 'valide' %}Validé{% if plan.date_validation %} le {{ plan.date_validation|date:"d/m/Y" }}{% endif %}.
         {% else %}Ce plan a été rejeté.{% endif %}
       </p>
     </div>
@@ -45,14 +44,14 @@
       <div class="form-actions">
         <button class="button" type="submit" name="action" value="valider">{% icone "valider" %} Valider le plan</button>
         <button class="button secondary" type="submit" name="action" value="enregistrer">Enregistrer sans valider</button>
-        <button class="button secondary" type="submit" name="action" value="rejeter" onclick="return confirm('Rejeter ce plan ?');">Rejeter</button>
+        <button class="button secondary" type="submit" name="action" value="rejeter" data-confirm="Rejeter ce plan ?">Rejeter</button>
       </div>
     </form>
   {% else %}
     {% for titre in titres %}
       <div class="field-row" style="padding-left:{{ titre.niveau|add:'-1' }}em">
         {% if titre.niveau <= 2 %}<strong>{{ titre.libelle }}</strong>{% else %}{{ titre.libelle }}{% endif %}
-        <span class="muted small-text">{{ titre.get_niveau_display }}</span>
+        <span class="muted small-text">{{ titre.get_niveau_display }}</span>{% if titre.pk in traites %} <span class="tag success">Traité</span>{% endif %}
       </div>
     {% empty %}
       <div class="empty-state">Ce plan ne contient aucun point.</div>

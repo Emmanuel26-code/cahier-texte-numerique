@@ -50,7 +50,7 @@
     {% if plans %}
     <ul class="liste">
       {% for p in plans %}
-      <li><a href="{% url 'plans:detail' p.pk %}"><strong>{{ p.titre }}</strong></a><div class="discret">{{ p.affectation.matiere }}</div></li>
+      <li><a href="{% url 'plans:detail' p.pk %}"><strong>{{ p.titre }}</strong></a><div class="discret">{{ p.affectation.matiere }}</div>{% if p.avancement %}<div class="avancement" title="{{ p.avancement.traites }} point{{ p.avancement.traites|pluralize }} traité{{ p.avancement.traites|pluralize }} sur {{ p.avancement.total }}"><div class="avancement-barre"><span style="width:{{ p.avancement.pourcentage }}%"></span></div><span class="discret">Programme : {{ p.avancement.pourcentage }} % ({{ p.avancement.traites }}/{{ p.avancement.total }})</span></div>{% endif %}</li>
       {% endfor %}
     </ul>
     {% else %}<p class="discret">Aucun plan de cours publié.</p>{% endif %}

@@ -7,5 +7,4 @@ app_name = "plans"
 urlpatterns = [
     path("documents/<int:document_id>/generer-plan/", views.generer_plan, name="generer_plan"),
     path("<int:plan_id>/", views.detail_plan, name="detail"),
-    path("<int:plan_id>/vu/", views.marquer_vu_plan, name="marquer_vu"),
 ]

@@ -46,12 +46,6 @@ class Document(models.Model):
     type_mime = models.CharField(max_length=100, editable=False)
     taille_octets = models.PositiveIntegerField(editable=False)
     date_import = models.DateTimeField(auto_now_add=True)
-    # Visa de la direction : l'administrateur consulte et marque « vu », sans modifier.
-    vu_le = models.DateTimeField("vu par la direction le", null=True, blank=True)
-    vu_par = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-        related_name="+", verbose_name="vu par",
-    )
 
     class Meta:
         ordering = ["-date_import"]
@@ -64,6 +58,11 @@ class Document(models.Model):
                 mimetypes.guess_type(self.fichier.name)[0] or "application/octet-stream"
             )
         super().save(*args, **kwargs)
+
+    @property
+    def plan_generable(self):
+        """L'IA sait lire les DOCX, PPTX, PDF et TXT (pas les classeurs Excel)."""
+        return os.path.splitext(self.nom_original or "")[1].lower() in (".docx", ".pptx", ".pdf", ".txt")
 
     def __str__(self):
         return self.nom_original

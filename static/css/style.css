@@ -705,3 +705,15 @@ a.chiffre:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
   .data-table.cartes td[colspan] { display: block; }
   .data-table.cartes td[colspan]::before { content: none; }
 }
+
+.cours-ligne { grid-template-columns: 1fr auto; align-items: center; }
+@media (max-width: 560px) { .cours-ligne { grid-template-columns: 1fr; } }
+
+/* Avancement du programme */
+.avancement { display: grid; gap: 4px; margin-top: 8px; }
+.avancement-barre { height: 8px; overflow: hidden; border-radius: var(--radius-full); background: var(--line-soft); }
+.avancement-barre span { display: block; height: 100%; border-radius: inherit; background: var(--olive); transition: width .6s var(--ease); }
+
+/* Pages d'erreur */
+.erreur { max-width: 520px; margin: 40px auto; text-align: center; }
+.erreur-code { margin: 0; color: var(--gold); font-size: 56px; font-weight: 800; line-height: 1; }

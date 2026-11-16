@@ -74,8 +74,7 @@ class ValidationPlanTests(TestCase):
     def test_rejeter(self):
         self.client.force_login(self.prof)
         self.client.post(self.url, {"action": "rejeter"})
-        self.plan.refresh_from_db()
-        self.assertEqual(self.plan.statut, Plan.Statut.REJETE)
+        self.assertFalse(Plan.objects.filter(pk=self.plan.pk).exists())  # un plan rejeté est supprimé
 
     def test_autre_professeur_ne_voit_pas_le_plan(self):
         self.client.force_login(self.autre_prof)
@@ -99,3 +98,42 @@ class ValidationPlanTests(TestCase):
         self.plan.save()
         self.client.force_login(self.prof)
         self.assertEqual(self.client.post(self.url, {"action": "rejeter"}).status_code, 404)
+
+
+class AvancementProgrammeTests(TestCase):
+    """Part des points du plan validé déjà traités en séance."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from apps.cahier.models import Seance
+
+        annee = AnneeScolaire.objects.create(
+            libelle="2026-2027", date_debut=datetime.date(2026, 9, 1), date_fin=datetime.date(2027, 7, 31))
+        classe = Classe.objects.create(nom="2nde A", annee=annee)
+        cls.prof = utilisateur("prof-av", Role.PROFESSEUR)
+        cls.eleve = utilisateur("eleve-av", Role.ELEVE)
+        Inscription.objects.create(eleve=cls.eleve, classe=classe)
+        aff = Affectation.objects.create(professeur=cls.prof, classe=classe, matiere=Matiere.objects.create(nom="Histoire"))
+        document = Document.objects.create(affectation=aff, chapitre="Révolution", nom_original="r.pdf",
+                                           fichier="documents/r.pdf", type_mime="application/pdf", taille_octets=1)
+        cls.plan = Plan.objects.create(document=document, statut=Plan.Statut.VALIDE)
+        cls.points = [Titre.objects.create(plan=cls.plan, niveau=1, ordre=i, libelle=f"Point {i}") for i in range(1, 5)]
+        traitee = Seance.objects.create(affectation=aff, date_seance=datetime.date(2026, 10, 1), duree_minutes=55,
+                                        titre="S1", contenu_traite="...")
+        traitee.points_du_plan.add(cls.points[0])
+        supprimee = Seance.objects.create(affectation=aff, date_seance=datetime.date(2026, 10, 2), duree_minutes=55,
+                                          titre="S2", contenu_traite="...", supprime=True)
+        supprimee.points_du_plan.add(cls.points[1])  # séance supprimée : ne compte pas
+
+    def test_pourcentage_sur_le_tableau_de_bord_professeur(self):
+        self.client.force_login(self.prof)
+        self.assertContains(self.client.get("/tableau-de-bord/professeur/"), "Programme : 25 % (1/4)")
+
+    def test_points_traites_marques_sur_le_plan(self):
+        self.client.force_login(self.prof)
+        page = self.client.get(f"/plans/{self.plan.pk}/").content.decode()
+        self.assertEqual(page.count(">Traité</span>"), 1)
+
+    def test_l_eleve_voit_l_avancement(self):
+        self.client.force_login(self.eleve)
+        self.assertContains(self.client.get("/tableau-de-bord/eleve/"), "Programme : 25 %")

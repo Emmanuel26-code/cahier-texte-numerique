@@ -72,7 +72,7 @@ class ImportDocumentTests(TestCase):
         )
         self.client.force_login(administrateur)
         self.assertEqual(self.envoyer("cours-admin.txt", b"Support de cours").status_code, 403)
-        self.assertEqual(self.client.post("/documents/", {}).status_code, 403)
+        self.assertEqual(self.client.post("/documents/", {}).status_code, 405)  # la liste ne sert plus à importer
         self.assertFalse(Document.objects.exists())
 
     def test_import_pdf_et_docx_acceptes(self):
@@ -211,3 +211,37 @@ class TelechargementProtegeTests(TestCase):
     def test_aucune_adresse_media_publique(self):
         self.client.force_login(self.affectation.professeur)
         self.assertEqual(self.client.get(f"/media/{self.document.fichier.name}").status_code, 404)
+
+
+@override_settings(MEDIA_ROOT=DOSSIER_TEST)
+class MesCoursTests(TestCase):
+    """Page « Cours » des élèves : seulement les cours de leur classe."""
+
+    def setUp(self):
+        from apps.academique.models import Classe, Inscription
+        from apps.plans.models import Plan
+
+        self.affectation = creer_affectation("prof-cours")
+        self.document = Document.objects.create(affectation=self.affectation, chapitre="Les fractions",
+                                                fichier=SimpleUploadedFile("fractions.pdf", PDF_VALIDE))
+        Plan.objects.create(document=self.document, statut=Plan.Statut.VALIDE)
+        autre = Classe.objects.create(nom="Autre classe", annee=self.affectation.classe.annee)
+        autre_aff = creer_affectation("prof-autre")
+        autre_aff.classe = autre
+        autre_aff.save()
+        Document.objects.create(affectation=autre_aff, chapitre="Cours secret",
+                                fichier=SimpleUploadedFile("secret.pdf", PDF_VALIDE))
+        self.eleve = Utilisateur.objects.create_user("eleve-cours", "eleve-cours@example.com", "x" * 12, role="eleve")
+        Inscription.objects.create(eleve=self.eleve, classe=self.affectation.classe)
+
+    def test_l_eleve_voit_les_cours_de_sa_classe(self):
+        self.client.force_login(self.eleve)
+        page = self.client.get("/documents/mes-cours/")
+        self.assertContains(page, "Les fractions")
+        self.assertContains(page, "Plan du cours")
+        self.assertContains(page, f"/documents/{self.document.pk}/telecharger/")
+        self.assertNotContains(page, "Cours secret")
+
+    def test_reservee_aux_eleves(self):
+        self.client.force_login(self.affectation.professeur)
+        self.assertEqual(self.client.get("/documents/mes-cours/").status_code, 403)

@@ -15,9 +15,9 @@ from apps.comptes.models import Utilisateur
 from apps.documents.models import Document
 
 from apps.comptes.permissions import role_requis
-from apps.comptes.visa import marquer_vu
 
 from .models import Plan, Titre
+from .services.avancement import titres_traites
 from .services.erreurs import ConfigurationIAError, ExtractionError, GenerationPlanError, LLMError
 from .services.generation import generer_plan_pour_document
 
@@ -169,9 +169,11 @@ def detail_plan(request, plan_id):
                 plan.save(update_fields=["statut", "date_validation"])
                 messages.success(request, "Plan validé : il est maintenant visible par les élèves de la classe.")
             elif action == "rejeter":
-                plan.statut = Plan.Statut.REJETE
-                plan.save(update_fields=["statut"])
-                messages.success(request, "Plan rejeté.")
+                # Un plan rejeté ne sert plus à rien : on le supprime (le professeur peut en régénérer un).
+                document_id = plan.document_id
+                plan.delete()
+                messages.success(request, "Plan rejeté et supprimé.")
+                return redirect(f"{reverse('documents:liste')}?document={document_id}")
             else:
                 messages.success(request, "Modifications enregistrées.")
         return redirect("plans:detail", plan_id=plan.pk)
@@ -182,16 +184,9 @@ def detail_plan(request, plan_id):
         {
             "plan": plan,
             "titres": plan.titres.order_by("ordre"),
+            "traites": titres_traites(plan) if plan.statut == Plan.Statut.VALIDE else set(),
             "modifiable": modifiable,
             "peut_gerer": _peut_modifier(request.user, plan),
-            "peut_viser": request.user.est_administrateur,
         },
     )
 
-
-@role_requis(Utilisateur.Role.ADMINISTRATEUR)
-@require_POST
-def marquer_vu_plan(request, plan_id):
-    """Visa de la direction : le plan est marqué comme vu (aucune modification)."""
-    marquer_vu(request, get_object_or_404(Plan, pk=plan_id))
-    return redirect("plans:detail", plan_id=plan_id)

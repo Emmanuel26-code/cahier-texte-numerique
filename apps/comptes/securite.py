@@ -125,6 +125,20 @@ def envoyer_confirmation(request, utilisateur):
     )
 
 
+def prevenir_compte_existant(request, email):
+    """Quelqu'un a tenté de s'inscrire avec une adresse déjà utilisée : on prévient son titulaire."""
+    if not envoi_email_possible():
+        return
+    lien = request.build_absolute_uri(reverse("password_reset"))
+    try:
+        _envoyer(
+            "Tentative d’inscription avec votre adresse – Cahier de texte numérique", "compte_existant",
+            [email], {"lien": lien, "connexion": request.build_absolute_uri(reverse("login"))},
+        )
+    except Exception:
+        logger.exception("Impossible de prévenir le titulaire d'une adresse déjà inscrite")
+
+
 # --- 3. Validation des comptes professeurs --------------------------------------------------
 
 def prevenir_administration(request, professeur):
