@@ -1,0 +1,8 @@
+{% autoescape off %}Bonjour{% if user.first_name %} {{ user.first_name }}{% endif %},
+
+Bonne nouvelle : l’administration a validé votre compte professeur sur le Cahier de texte numérique.
+Vous pouvez maintenant vous connecter :
+{{ lien }}
+
+Cahier de texte numérique
+{% endautoescape %}

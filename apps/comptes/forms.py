@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, SetPasswordForm, UserCreationForm
 from django.contrib.auth.password_validation import validate_password
 
@@ -57,8 +58,36 @@ class ConnexionForm(AuthenticationForm):
         })
         self.fields["password"].widget.attrs["autocomplete"] = "current-password"
 
-
     rester_connecte = forms.BooleanField(label="Rester connecté", required=False, initial=True)
+
+    def clean(self):
+        from .securite import connexion_bloquee
+
+        email = (self.cleaned_data.get("username") or "").strip()
+        mot_de_passe = self.cleaned_data.get("password")
+        if email and connexion_bloquee(self.request, email):
+            raise ValidationError(
+                "Trop de tentatives de connexion. Pour votre sécurité, réessayez dans 15 minutes.",
+                code="bloque",
+            )
+        try:
+            return super().clean()
+        except ValidationError:
+            # Mot de passe juste mais compte pas encore utilisable : on explique pourquoi.
+            compte = Utilisateur.objects.filter(email__iexact=email).first() if email else None
+            if compte and compte.is_active and mot_de_passe and compte.check_password(mot_de_passe):
+                if not compte.email_verifie:
+                    raise ValidationError(
+                        "Confirmez d’abord votre adresse e-mail avec le lien que nous vous avons envoyé.",
+                        code="email_non_verifie",
+                    )
+                if compte.en_attente_validation:
+                    raise ValidationError(
+                        "Votre compte professeur attend la validation de l’administration. "
+                        "Vous recevrez un e-mail dès qu’il sera validé.",
+                        code="en_attente",
+                    )
+            raise
 
 
 class DemandeReinitialisationForm(PasswordResetForm):

@@ -51,8 +51,9 @@ class InscriptionPubliqueTests(TestCase):
 
     def test_inscription_professeur_acceptee(self):
         reponse = self.poster(Role.PROFESSEUR, "prof1")
-        self.assertRedirects(reponse, reverse("tableau_de_bord:accueil"), fetch_redirect_response=False)
+        self.assertRedirects(reponse, reverse("inscription_envoyee"), fetch_redirect_response=False)
         self.assertEqual(Utilisateur.objects.get(username="prof1").role, Role.PROFESSEUR)
+        self.assertTrue(Utilisateur.objects.get(username="prof1").en_attente_validation)  # à valider par l'administration
 
     def test_inscription_eleve_acceptee(self):
         self.poster(Role.ELEVE, "eleve1")

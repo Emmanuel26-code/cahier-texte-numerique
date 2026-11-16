@@ -1,0 +1,19 @@
+{% extends "comptes/_auth.html" %}
+{% block titre %}Inscription enregistrée · Cahier de texte numérique{% endblock %}
+{% block accroche %}Encore une <em>petite étape.</em>{% endblock %}
+{% block formulaire %}
+  {% if confirmation %}
+    <h1>Vérifiez votre boîte mail</h1>
+    <p class="sous-titre">Nous avons envoyé un lien de confirmation{% if email %} à <strong>{{ email }}</strong>{% endif %}. Cliquez dessus pour activer votre compte (valable 3 jours).</p>
+    {% if professeur %}<div class="notice">Comme vous vous êtes inscrit en tant que professeur, l’administration devra ensuite valider votre compte. Vous recevrez un e-mail dès que ce sera fait.</div>{% endif %}
+    <div class="notice">Rien reçu ? Regardez dans les courriers indésirables (spam), ou demandez un nouveau lien depuis la page de connexion.</div>
+  {% else %}
+    <h1>Inscription enregistrée</h1>
+    {% if professeur %}
+      <p class="sous-titre">Votre compte professeur attend la validation de l’administration.</p>
+    {% else %}
+      <p class="sous-titre">Votre compte est prêt.</p>
+    {% endif %}
+  {% endif %}
+  <a class="button block" href="{% url 'login' %}">Aller à la connexion</a>
+{% endblock %}

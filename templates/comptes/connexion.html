@@ -17,5 +17,10 @@
     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
     <button class="button block" type="submit">Se connecter</button>
   </form>
+  {% if email_non_verifie %}
+    <div class="renvoi-bloc">
+      {% with email_renvoi=form.username.value %}{% include "comptes/_renvoyer_confirmation.html" %}{% endwith %}
+    </div>
+  {% endif %}
   <p class="auth-bas">Pas encore de compte ? <a href="{% url 'inscription' %}">Créer un compte</a></p>
 {% endblock %}

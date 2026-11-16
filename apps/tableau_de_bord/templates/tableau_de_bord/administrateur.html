@@ -24,8 +24,11 @@
 </section>
 
 <div class="grille">
-  <section class="carte{% if affectations_sans_seance or eleves_sans_classe %} alerte{% endif %}" aria-labelledby="titre-attention">
+  <section class="carte{% if affectations_sans_seance or eleves_sans_classe or nb_professeurs_a_valider %} alerte{% endif %}" aria-labelledby="titre-attention">
     <h2 id="titre-attention">Points d’attention</h2>
+    {% if nb_professeurs_a_valider %}
+    <p class="discret" style="margin:0 0 8px"><a href="{% url 'utilisateurs' %}?role=professeur"><strong>{{ nb_professeurs_a_valider }} compte{{ nb_professeurs_a_valider|pluralize }} professeur à valider</strong></a></p>
+    {% endif %}
     <ul class="liste">
       {% if eleves_sans_classe %}
       <li><strong>{{ eleves_sans_classe }} élève{{ eleves_sans_classe|pluralize }} sans classe</strong>
@@ -35,7 +38,7 @@
       <li><strong>{{ a.classe.nom }} · {{ a.matiere.nom }}</strong>
         <div class="discret">Aucune séance saisie par {{ a.professeur.get_full_name|default:a.professeur.username }}</div></li>
       {% endfor %}
-      {% if not eleves_sans_classe and not affectations_sans_seance %}<li class="discret">Rien à signaler.</li>{% endif %}
+      {% if not eleves_sans_classe and not affectations_sans_seance and not nb_professeurs_a_valider %}<li class="discret">Rien à signaler.</li>{% endif %}
     </ul>
   </section>
 

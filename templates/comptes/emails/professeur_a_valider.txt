@@ -1,0 +1,11 @@
+{% autoescape off %}Bonjour,
+
+Une nouvelle demande de compte professeur attend votre validation sur le Cahier de texte numérique :
+
+{{ professeur.get_full_name }} – {{ professeur.email }}
+
+Pour valider ou refuser cette demande :
+{{ lien }}
+
+Cahier de texte numérique
+{% endautoescape %}

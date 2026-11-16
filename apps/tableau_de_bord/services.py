@@ -102,6 +102,8 @@ def donnees_tableau_bord_administrateur():
         "nb_documents": Document.objects.count(),
         "nb_plans_valides": plans.get(Plan.Statut.VALIDE, 0),
         "nb_plans_en_attente": plans.get(Plan.Statut.PROPOSE, 0),
+        "nb_professeurs_a_valider": Utilisateur.objects.filter(
+            role=Utilisateur.Role.PROFESSEUR, en_attente_validation=True, email_verifie=True).count(),
         "nb_seances_a_viser": Seance.objects.filter(supprime=False, vu_le__isnull=True).count(),
         "nb_cours_a_viser": Document.objects.filter(vu_le__isnull=True).count(),
         "affectations_sans_seance": list(

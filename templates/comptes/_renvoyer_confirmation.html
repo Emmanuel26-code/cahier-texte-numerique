@@ -1,0 +1,8 @@
+<form method="post" action="{% url 'renvoyer_confirmation' %}" class="renvoi" data-chargement>
+  {% csrf_token %}
+  <div class="champ">
+    <label for="email-renvoi">Adresse e-mail du compte</label>
+    <input id="email-renvoi" type="email" name="email" value="{{ email_renvoi|default:'' }}" autocomplete="email" inputmode="email" autocapitalize="none" required>
+  </div>
+  <button class="button block secondary" type="submit">Renvoyer le lien de confirmation</button>
+</form>

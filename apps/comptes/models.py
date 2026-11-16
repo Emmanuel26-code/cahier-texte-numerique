@@ -44,6 +44,11 @@ class Utilisateur(AbstractUser):
     # Un compte désactivé est supprimé au bout de JOURS_AVANT_SUPPRESSION jours
     # (commande « supprimer_comptes_desactives », lancée chaque jour).
     date_desactivation = models.DateTimeField("désactivé le", null=True, blank=True, editable=False)
+    # Inscription publique : l'adresse e-mail doit être confirmée (lien envoyé par e-mail)
+    # et un compte professeur doit être validé par l'administration avant la première connexion.
+    # Les comptes créés par l'administration sont confirmés et validés d'office.
+    email_verifie = models.BooleanField("e-mail confirmé", default=True)
+    en_attente_validation = models.BooleanField("en attente de validation", default=False)
 
     JOURS_AVANT_SUPPRESSION = 30
 
