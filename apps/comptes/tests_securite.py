@@ -25,18 +25,18 @@ class LimiteTentativesConnexionTests(TestCase):
         for _ in range(5):
             self.connecter("mauvais")
         reponse = self.connecter(MDP)
-        self.assertContains(reponse, "Trop de tentatives de connexion")
+        self.assertContains(reponse, "Réessayez dans 15 minutes.")
         self.assertNotIn("_auth_user_id", self.client.session)
 
     def test_blocage_par_e_mail_meme_en_changeant_d_adresse_ip(self):
         for i in range(5):
             self.connecter("mauvais", ip=f"10.0.0.{i + 10}")
-        self.assertContains(self.connecter(MDP, ip="10.9.9.9"), "Trop de tentatives de connexion")
+        self.assertContains(self.connecter(MDP, ip="10.9.9.9"), "Réessayez dans 15 minutes.")
 
     def test_blocage_par_ip_meme_en_changeant_d_e_mail(self):
         for i in range(5):
             self.connecter("mauvais", email=f"inconnu{i}@ecole.ci")
-        self.assertContains(self.connecter(MDP), "Trop de tentatives de connexion")
+        self.assertContains(self.connecter(MDP), "Réessayez dans 15 minutes.")
 
     def test_moins_de_5_echecs_puis_succes(self):
         for _ in range(4):
@@ -54,7 +54,7 @@ class LimiteTentativesConnexionTests(TestCase):
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend", EMAIL_CONFIGURE=True)
 class ConfirmationEmailTests(TestCase):
     donnees = {
-        "first_name": "Koffi", "last_name": "Yao", "email": "koffi@ecole.ci", "role": "eleve",
+        "first_name": "Koffi", "last_name": "Yao", "email": "koffi@ecole.ci", "role": "eleve", "classe": "6e A",
         "password1": MDP, "password2": MDP,
     }
 
@@ -184,3 +184,63 @@ class ValidationProfesseursTests(TestCase):
         compte = Utilisateur.objects.get(email="nouveau.prof@ecole.ci")
         self.assertTrue(compte.email_verifie)
         self.assertFalse(compte.en_attente_validation)
+
+
+class ClasseChoisieALInscriptionTests(TestCase):
+    """L'élève indique sa classe ; il y est inscrit tout de suite, ou dès qu'elle est créée."""
+
+    def setUp(self):
+        import datetime
+        from apps.academique.models import AnneeScolaire
+        cache.clear()
+        aujourd_hui = datetime.date.today()
+        self.annee = AnneeScolaire.objects.create(
+            libelle="en-cours", date_debut=aujourd_hui - datetime.timedelta(days=30),
+            date_fin=aujourd_hui + datetime.timedelta(days=200))
+
+    def inscrire(self, classe, email="eleve@ecole.ci", role="eleve"):
+        return self.client.post("/comptes/inscription/", {
+            "first_name": "Awa", "last_name": "Kone", "email": email, "role": role, "classe": classe,
+            "password1": MDP, "password2": MDP,
+        })
+
+    def test_classe_existante_inscription_immediate(self):
+        from apps.academique.models import Classe
+        classe = Classe.objects.create(nom="6e A", annee=self.annee)
+        self.inscrire("  6E   a ")  # casse et espaces ignorés
+        eleve = Utilisateur.objects.get(email="eleve@ecole.ci")
+        self.assertEqual(list(eleve.classes_suivies.all()), [classe])
+        self.assertEqual(eleve.classe_demandee, "")
+
+    def test_classe_pas_encore_creee_inscription_automatique_plus_tard(self):
+        from apps.academique.models import Classe
+        self.inscrire("Tle D")
+        eleve = Utilisateur.objects.get(email="eleve@ecole.ci")
+        self.assertEqual(eleve.classe_demandee, "Tle D")
+        self.assertFalse(eleve.classes_suivies.exists())
+        classe = Classe.objects.create(nom="TLE D", annee=self.annee)  # l'administration crée la classe
+        eleve.refresh_from_db()
+        self.assertEqual(list(eleve.classes_suivies.all()), [classe])
+        self.assertEqual(eleve.classe_demandee, "")
+
+    def test_classe_obligatoire_pour_un_eleve(self):
+        reponse = self.inscrire("")
+        self.assertContains(reponse, "Indiquez votre classe.")
+        self.assertFalse(Utilisateur.objects.filter(email="eleve@ecole.ci").exists())
+
+    def test_pas_de_classe_pour_un_professeur(self):
+        self.inscrire("", email="prof@ecole.ci", role="professeur")
+        prof = Utilisateur.objects.get(email="prof@ecole.ci")
+        self.assertEqual(prof.classe_demandee, "")
+        self.assertFalse(prof.classes_suivies.exists())
+
+    def test_suggestions_des_classes_existantes(self):
+        from apps.academique.models import Classe
+        Classe.objects.create(nom="5e B", annee=self.annee)
+        self.assertContains(self.client.get("/comptes/inscription/"), '<option value="5e B">')
+
+    def test_l_administration_voit_la_demande(self):
+        self.inscrire("3e C")
+        admin = Utilisateur.objects.create_user(email="dir@ecole.ci", password=MDP, role=Role.ADMINISTRATEUR)
+        self.client.force_login(admin)
+        self.assertContains(self.client.get("/comptes/utilisateurs/"), "Demande : 3e C")

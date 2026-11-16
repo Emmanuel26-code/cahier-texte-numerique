@@ -16,6 +16,12 @@ class InscriptionForm(UserCreationForm):
         fields = ("first_name", "last_name", "email", "role")
         labels = {"first_name": "Prénom", "last_name": "Nom", "email": "Adresse e-mail", "role": "Je suis"}
 
+    classe = forms.CharField(
+        label="Ma classe", max_length=50, required=False,
+        help_text="Par exemple 6e A. Choisissez dans la liste ou écrivez le nom exact de votre classe.",
+        widget=forms.TextInput(attrs={"list": "classes-existantes", "autocomplete": "off", "placeholder": "6e A"}),
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["role"].choices = [
@@ -39,6 +45,12 @@ class InscriptionForm(UserCreationForm):
         if Utilisateur.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError("Un compte existe déjà avec cette adresse e-mail.")
         return email
+
+    def clean(self):
+        donnees = super().clean()
+        if donnees.get("role") == Utilisateur.Role.ELEVE and not " ".join((donnees.get("classe") or "").split()):
+            self.add_error("classe", "Indiquez votre classe.")
+        return donnees
 
 
 class ConnexionForm(AuthenticationForm):
@@ -67,7 +79,7 @@ class ConnexionForm(AuthenticationForm):
         mot_de_passe = self.cleaned_data.get("password")
         if email and connexion_bloquee(self.request, email):
             raise ValidationError(
-                "Trop de tentatives de connexion. Pour votre sécurité, réessayez dans 15 minutes.",
+                "Réessayez dans 15 minutes.",
                 code="bloque",
             )
         try:
