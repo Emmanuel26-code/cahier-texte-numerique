@@ -49,6 +49,8 @@ class Utilisateur(AbstractUser):
     # Les comptes créés par l'administration sont confirmés et validés d'office.
     email_verifie = models.BooleanField("e-mail confirmé", default=True)
     en_attente_validation = models.BooleanField("en attente de validation", default=False)
+    # Élève inscrit avant que sa classe existe : il y sera inscrit dès sa création.
+    classe_demandee = models.CharField("classe demandée", max_length=50, blank=True)
 
     JOURS_AVANT_SUPPRESSION = 30
 

@@ -45,7 +45,7 @@ class TroisRolesTests(TestCase):
 class InscriptionPubliqueTests(TestCase):
     def poster(self, role, nom="nouveau"):
         return self.client.post(reverse(URL_INSCRIPTION), {
-            "first_name": "Awa", "last_name": "Test", "email": f"{nom}@exemple.ci",
+            "first_name": "Awa", "last_name": "Test", "email": f"{nom}@exemple.ci", "classe": "6e A",
             "role": role, "password1": MOT_DE_PASSE, "password2": MOT_DE_PASSE,
         })
 

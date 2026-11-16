@@ -28,7 +28,7 @@
             <td>{{ compte.first_name|default:"—" }}</td>
             <td>{{ compte.email }}</td>
             <td>{{ compte.get_role_display }}</td>
-            <td>{% if compte.est_eleve %}{{ compte.nombre_classes }} classe{{ compte.nombre_classes|pluralize }}{% else %}—{% endif %}</td>
+            <td>{% if compte.est_eleve %}{{ compte.nombre_classes }} classe{{ compte.nombre_classes|pluralize }}{% if compte.classe_demandee %}<br><span class="tag tag-attente" title="Inscription automatique dès que cette classe sera créée">Demande : {{ compte.classe_demandee }}</span>{% endif %}{% else %}—{% endif %}</td>
             <td>{% if compte.is_active and compte.en_attente_validation %}<span class="tag tag-attente">À valider</span>{% elif compte.is_active and not compte.email_verifie %}<span class="tag">E-mail non confirmé</span>{% elif compte.is_active %}<span class="tag success">Actif</span>{% elif compte.date_suppression_prevue %}<span class="tag tag-alerte" title="Désactivé le {{ compte.date_desactivation|date:'d/m/Y' }}">Supprimé le {{ compte.date_suppression_prevue|date:"d/m/Y" }}</span>{% else %}<span class="tag">Désactivé</span>{% endif %}</td>
             <td><a class="table-link" href="{% url 'utilisateurs' %}?modifier={{ compte.pk }}&amp;q={{ q|urlencode }}&amp;role={{ role_filtre|urlencode }}&amp;classe={{ classe_filtre|urlencode }}">Gérer le profil</a></td>
           </tr>
@@ -92,6 +92,7 @@
         {% for inscription in inscriptions %}
           <div class="field-row"><strong>{{ inscription.classe.nom }}</strong><span>Année scolaire {{ inscription.classe.annee.libelle }}</span></div>
         {% empty %}<p class="small-text muted">Aucune inscription en classe.</p>{% endfor %}
+        {% if selection.classe_demandee %}<div class="notice">Classe demandée à l’inscription : <strong>{{ selection.classe_demandee }}</strong>. L’élève y sera inscrit automatiquement dès que cette classe sera créée dans Référentiels.</div>{% endif %}
         <div class="notice">Pour ajouter ou retirer des classes, sélectionnez-les dans le champ « Classes d’inscription » du profil puis enregistrez.</div>
       {% else %}
         <p class="small-text muted">{% if selection %}Les inscriptions aux classes sont réservées aux profils élèves.{% else %}Sélectionnez un élève pour gérer ses inscriptions.{% endif %}</p>

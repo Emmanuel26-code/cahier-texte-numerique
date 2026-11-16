@@ -19,6 +19,7 @@ from .forms import (
     NouveauMotDePasseForm,
 )
 from .models import Utilisateur
+from .classes import affecter_classe, classes_proposees
 from .permissions import role_requis
 from .securite import (
     adresse_ip,
@@ -111,6 +112,8 @@ def inscription(request):
             utilisateur.email_verifie = not envoi_email_possible()
             utilisateur.en_attente_validation = utilisateur.role == Utilisateur.Role.PROFESSEUR
             utilisateur.save()
+            if utilisateur.role == Utilisateur.Role.ELEVE:
+                affecter_classe(utilisateur, form.cleaned_data["classe"])
             if not utilisateur.email_verifie:
                 try:
                     envoyer_confirmation(request, utilisateur)
@@ -122,7 +125,7 @@ def inscription(request):
             request.session["inscription_professeur"] = utilisateur.en_attente_validation
             return redirect("inscription_envoyee")
 
-    return render(request, "comptes/inscription.html", {"form": form})
+    return render(request, "comptes/inscription.html", {"form": form, "classes_existantes": classes_proposees()})
 
 
 def inscription_envoyee(request):

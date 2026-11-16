@@ -7,4 +7,4 @@ class ComptesConfig(AppConfig):
     label = "comptes"
 
     def ready(self):
-        from . import securite  # noqa: F401  (branche le comptage des échecs de connexion)
+        from . import classes, securite  # noqa: F401  (branche les signaux)
