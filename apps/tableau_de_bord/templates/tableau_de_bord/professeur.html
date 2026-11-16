@@ -31,6 +31,7 @@
       <strong>{{ a.classe.nom }}</strong> <span class="discret">{{ a.classe.annee.libelle }}</span>
       <div>{{ a.matiere.nom }}</div>
       <div class="discret">{{ a.nb_seances }} séance{{ a.nb_seances|pluralize }}</div>
+      {% if a.avancement %}<div class="avancement" title="{{ a.avancement.traites }} point{{ a.avancement.traites|pluralize }} traité{{ a.avancement.traites|pluralize }} sur {{ a.avancement.total }}"><div class="avancement-barre"><span style="width:{{ a.avancement.pourcentage }}%"></span></div><span class="discret">Programme : {{ a.avancement.pourcentage }} % ({{ a.avancement.traites }}/{{ a.avancement.total }})</span></div>{% else %}<div class="discret">Pas encore de plan validé</div>{% endif %}
     </article>
     {% endfor %}
   </div>

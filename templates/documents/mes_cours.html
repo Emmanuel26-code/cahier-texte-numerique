@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load interface %}
+{% block titre %}Cours · CahierPro{% endblock %}
+{% block fil_ariane %}Cours{% endblock %}
+{% block contenu %}
+<section class="page-heading">
+  <div><h1>Cours</h1><p>Les supports déposés par vos professeurs.</p></div>
+</section>
+{% for matiere, documents in matieres.items %}
+  <section class="panel">
+    <div class="panel-heading"><div><h2>{{ matiere }}</h2><p>{{ documents|length }} support{{ documents|length|pluralize }}</p></div></div>
+    {% for document in documents %}
+      <div class="field-row cours-ligne">
+        <div>
+          <strong>{{ document.chapitre|default:document.nom_original }}</strong>
+          <div class="muted small-text">{{ document.affectation.professeur.get_full_name }} · {{ document.date_import|date:"d/m/Y" }} · {{ document.taille_octets|taille }}</div>
+          {% for plan in document.plans_valides %}<a class="table-link small-text" href="{% url 'plans:detail' plan.pk %}">Plan du cours</a>{% endfor %}
+        </div>
+        <a class="button secondary small" href="{% url 'documents:telecharger' document.pk %}">{% icone "telecharger" 16 %} Télécharger</a>
+      </div>
+    {% endfor %}
+  </section>
+{% empty %}
+  <section class="panel"><div class="empty-state">Aucun cours n’a encore été déposé pour votre classe.</div></section>
+{% endfor %}
+{% endblock %}

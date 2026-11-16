@@ -3,8 +3,8 @@ import os
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import models
 from django.db.models import Q
-from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404, redirect, render
@@ -14,8 +14,6 @@ from django.views.decorators.http import require_http_methods
 from apps.academique.models import Affectation
 from apps.comptes.models import Utilisateur
 from apps.comptes.permissions import role_requis
-
-from apps.comptes.visa import marquer_vu
 
 from .forms import DocumentForm
 from .models import Document
@@ -39,7 +37,7 @@ def importer(request):
 
 
 @role_requis(Role.PROFESSEUR, Role.ADMINISTRATEUR)
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["GET"])
 def liste(request):
     documents = Document.objects.select_related(
         "affectation__professeur", "affectation__classe", "affectation__matiere"
@@ -61,15 +59,6 @@ def liste(request):
     if chapitre:
         documents = documents.filter(chapitre__icontains=chapitre)
 
-    form = None
-    if request.user.est_professeur:
-        form = DocumentForm(request.POST or None, request.FILES or None, professeur=request.user)
-        if request.method == "POST" and form.is_valid():
-            form.save()
-            messages.success(request, "Document importé avec succès.")
-            return redirect("documents:liste")
-    elif request.method == "POST":
-        raise PermissionDenied  # l'administration consulte les cours sans en importer
 
     selected = None
     selected_id = request.GET.get("document")
@@ -86,8 +75,6 @@ def liste(request):
         {
             "documents": documents,
             "selection": selected,
-            "form": form,
-            "taille_max": settings.DOCUMENT_MAX_OCTETS,
             "q": query,
             "affectation_filtre": affectation_id,
             "chapitre_filtre": chapitre,
@@ -139,9 +126,21 @@ def telecharger(request, document_id):
     )
 
 
-@role_requis(Role.ADMINISTRATEUR)
-@require_POST
-def marquer_vu_document(request, document_id):
-    """Visa de la direction : le cours est marqué comme vu (aucune modification)."""
-    marquer_vu(request, get_object_or_404(Document, pk=document_id))
-    return redirect(f"{reverse('documents:liste')}?document={document_id}")
+
+@role_requis(Role.ELEVE)
+def mes_cours(request):
+    """Les cours de la classe de l'élève, rangés par matière, avec les plans validés."""
+    from apps.plans.models import Plan
+
+    documents = (
+        Document.objects.filter(affectation__classe__in=request.user.classes_suivies.all())
+        .select_related("affectation__matiere", "affectation__professeur")
+        .prefetch_related(models.Prefetch(
+            "plans", queryset=Plan.objects.filter(statut=Plan.Statut.VALIDE), to_attr="plans_valides"))
+        .order_by("affectation__matiere__nom", "-date_import")
+        .distinct()
+    )
+    matieres = {}
+    for document in documents:
+        matieres.setdefault(document.affectation.matiere.nom, []).append(document)
+    return render(request, "documents/mes_cours.html", {"matieres": matieres})
