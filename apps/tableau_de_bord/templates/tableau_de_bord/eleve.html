@@ -1,5 +1,5 @@
 {% extends "tableau_de_bord/base.html" %}
-{% block titre %}Tableau de bord – Élève{% endblock %}
+{% block titre %}Tableau de bord – Élève · CahierPro{% endblock %}
 {% block cloche %}
 <a class="button secondary" href="{% url 'notifications:liste' %}" aria-label="Notifications : {{ nb_non_lues }} non lue{{ nb_non_lues|pluralize }}">
   Notifications{% if nb_non_lues %} <span class="pastille">{{ nb_non_lues }}</span>{% endif %}

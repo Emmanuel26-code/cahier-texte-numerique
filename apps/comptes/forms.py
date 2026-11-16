@@ -18,7 +18,6 @@ class InscriptionForm(UserCreationForm):
 
     classe = forms.CharField(
         label="Ma classe", max_length=50, required=False,
-        help_text="Par exemple 6e A. Choisissez dans la liste ou écrivez le nom exact de votre classe.",
         widget=forms.TextInput(attrs={"list": "classes-existantes", "autocomplete": "off", "placeholder": "6e A"}),
     )
 
@@ -65,7 +64,7 @@ class ConnexionForm(AuthenticationForm):
         super().__init__(*args, **kwargs)
         self.fields["username"].label = "Adresse e-mail"
         self.fields["username"].widget = forms.EmailInput(attrs={
-            "autocomplete": "email", "inputmode": "email",
+            "autocomplete": "username", "inputmode": "email",
             "autocapitalize": "none", "spellcheck": "false",
         })
         self.fields["password"].widget.attrs["autocomplete"] = "current-password"
@@ -129,7 +128,6 @@ class GestionUtilisateurForm(forms.ModelForm):
         label="Mot de passe",
         widget=forms.PasswordInput,
         required=False,
-        help_text="Obligatoire pour un nouvel utilisateur.",
     )
     classes = forms.ModelMultipleChoiceField(
         label="Classes d’inscription",

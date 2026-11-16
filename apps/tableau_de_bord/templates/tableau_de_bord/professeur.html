@@ -1,6 +1,6 @@
 {% extends "tableau_de_bord/base.html" %}
 {% load interface %}
-{% block titre %}Tableau de bord – Professeur{% endblock %}
+{% block titre %}Tableau de bord – Professeur · CahierPro{% endblock %}
 {% block entete %}
   <h1>Bonjour, {{ request.user.first_name|default:request.user.username }}</h1>
   <p class="discret">{{ affectations|length }} classe{{ affectations|length|pluralize }} · {{ nb_seances_mois }} séance{{ nb_seances_mois|pluralize }} ce mois-ci</p>

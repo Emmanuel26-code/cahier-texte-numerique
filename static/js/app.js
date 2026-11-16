@@ -92,6 +92,43 @@
     majClasse();
   }
 
+  /* --- Connexion : « Rester connecté » mémorise les identifiants ------------
+     Case cochée : à la connexion, le navigateur enregistre l'adresse et le mot de
+     passe. Aux visites suivantes, il propose les comptes enregistrés ; on en choisit
+     un, les champs se remplissent, puis on valide avec « Se connecter ».
+     (Gestionnaire d'identifiants du navigateur : Chrome, Edge, Android ; sur iPhone,
+     le trousseau iCloud propose les comptes grâce aux attributs autocomplete.) */
+  var formConnexion = document.querySelector("form[data-connexion]");
+  var gestionnaire = window.PasswordCredential && navigator.credentials;
+  if (formConnexion && gestionnaire) {
+    var champEmail = formConnexion.querySelector("input[name=username]");
+    var champMdp = formConnexion.querySelector("input[name=password]");
+    var caseRester = formConnexion.querySelector("input[name=rester_connecte]");
+
+    if (champEmail && champMdp && !champEmail.value) {
+      navigator.credentials.get({ password: true, mediation: "optional" }).then(function (identifiant) {
+        if (identifiant && identifiant.type === "password") {
+          champEmail.value = identifiant.id;
+          champMdp.value = identifiant.password;
+          formConnexion.querySelector("button[type=submit]").focus();
+        }
+      }).catch(function () {});
+    }
+
+    var enregistre = false;
+    formConnexion.addEventListener("submit", function (e) {
+      if (enregistre || !caseRester || !caseRester.checked || !champEmail.value || !champMdp.value) return;
+      e.preventDefault();
+      enregistre = true;
+      var fin = function () { formConnexion.submit(); };
+      try {
+        var identifiant = new PasswordCredential({ id: champEmail.value, password: champMdp.value, name: champEmail.value });
+        Promise.race([navigator.credentials.store(identifiant), new Promise(function (r) { setTimeout(r, 1500); })])
+          .then(fin, fin);
+      } catch (err) { fin(); }
+    });
+  }
+
   /* --- Bouton « en cours » à l'envoi d'un formulaire ------------------------ */
   document.querySelectorAll("form[data-chargement]").forEach(function (f) {
     f.addEventListener("submit", function () {

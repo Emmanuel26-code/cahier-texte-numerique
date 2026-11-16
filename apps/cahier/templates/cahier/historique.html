@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block titre %}Historique · Cahier de texte{% endblock %}
+{% block titre %}Historique · CahierPro{% endblock %}
 {% block fil_ariane %}Historique{% endblock %}
 {% block contenu %}
 <section class="page-heading">
@@ -67,5 +67,4 @@
     <div class="form-actions"><a class="button secondary" href="{% url 'cahier:detail' detail.seance_id %}">Consulter la séance</a></div>
   </section>
 {% endif %}
-<div class="notice" style="margin-top:15px">Chaque entrée de ce journal correspond à une modification ou une suppression enregistrée d’une séance. Les créations ne sont pas historisées par le modèle actuel.</div>
 {% endblock %}

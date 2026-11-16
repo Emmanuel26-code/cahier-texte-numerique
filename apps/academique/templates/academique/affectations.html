@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load interface %}
-{% block titre %}Affectations · Cahier de texte{% endblock %}
+{% block titre %}Affectations · CahierPro{% endblock %}
 {% block fil_ariane %}Affectations{% endblock %}
 {% block contenu %}
 <section class="page-heading">
@@ -39,7 +39,6 @@
       </tbody>
     </table>
   </div>
-  <p class="small-text muted" style="margin:12px 0 0">Les séances et les documents sont rattachés à une affectation, et non à une simple inscription en classe.</p>
 </section>
 
 <div class="management-grid" style="margin-top:15px">
@@ -61,7 +60,6 @@
         </div>
       {% endfor %}
       {% if form.non_field_errors %}<ul class="errorlist">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
-      <div class="notice">Une affectation associe exactement un enseignant, une classe et une matière.</div>
       <div class="form-actions">
         <button class="button" type="submit">Enregistrer l’affectation</button>
         {% if selection %}<a class="button secondary" href="{% url 'academique:affectations' %}">Annuler</a>{% endif %}
