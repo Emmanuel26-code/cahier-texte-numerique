@@ -1,31 +1,31 @@
 /* ==========================================================================
    Cahier de texte numérique — feuille de style unique
-   Couleurs du projet : bleu (#2864f0) et blanc, police Manrope.
+   Couleurs de CahierPro : vert (#1b7a57) et orange (#f39c32), police Manrope.
    Mobile d'abord : cibles tactiles ≥ 44 px, champs en 16 px (pas de zoom iOS),
    zones sûres (encoches), animations désactivées si l'utilisateur le demande.
    ========================================================================== */
 
 :root {
   color-scheme: light;
-  --bg: #f5f7fb;
-  --bg-alt: #eef2f8;
+  --bg: #f4f6f5;
+  --bg-alt: #edf2ef;
   --surface: #ffffff;
-  --ink: #1f2937;
-  --ink-2: #344054;
-  --muted: #667085;
-  --line: #e4e7ec;
-  --line-soft: #edf0f5;
-  --olive: #2864f0;
-  --olive-dark: #174bd1;
-  --olive-soft: #a9c1fb;
-  --olive-light: #eef3ff;
-  --forest: #2864f0;
-  --forest-2: #174bd1;
-  --forest-3: #0f2f8a;
+  --ink: #23302b;
+  --ink-2: #34433d;
+  --muted: #6b7a74;
+  --line: #e1e8e4;
+  --line-soft: #ebf0ed;
+  --olive: #1b7a57;
+  --olive-dark: #145c41;
+  --olive-soft: #8cc6ae;
+  --olive-light: #e8f4ee;
+  --forest: #1b7a57;
+  --forest-2: #145c41;
+  --forest-3: #0e4330;
   --cream: #ffffff;
-  --gold: #2864f0;
-  --gold-warm: #9fbcff;
-  --gold-light: #e7efff;
+  --gold: #f39c32;
+  --gold-warm: #f7b45c;
+  --gold-light: #fff1df;
   --danger: #a33a2c;
   --danger-bg: #fbeceb;
   --success: #167647;
@@ -66,12 +66,15 @@ a:hover { color: var(--forest); text-decoration: underline; text-underline-offse
 button, input, select, textarea { font: inherit; color: inherit; }
 img, svg { display: block; max-width: 100%; }
 [hidden] { display: none !important; }
+.nom-app { font-weight: 800; letter-spacing: -.01em; }
+.nom-app b { color: var(--olive); font-weight: 800; }
+.nom-app i { color: var(--gold); font-style: normal; }
 .icone { flex: none; display: inline-block; vertical-align: -3px; }
 .nav-icon { display: grid; place-items: center; }
 .form-field input[type="file"] { padding: 10px; font-size: 15px; cursor: pointer; }
 .form-field input[type="file"]::file-selector-button { margin-right: 12px; padding: 8px 14px; border: 0; border-radius: var(--radius-full); color: #fff; background: var(--olive); font: inherit; font-weight: 700; cursor: pointer; }
 h1, h2, h3 { color: var(--ink); letter-spacing: -.02em; line-height: 1.15; }
-:focus-visible { outline: 3px solid rgba(40, 100, 240, .45); outline-offset: 2px; }
+:focus-visible { outline: 3px solid rgba(27, 122, 87, .45); outline-offset: 2px; }
 ::selection { background: var(--gold-light); }
 
 /* ---------- Boutons -------------------------------------------------------- */
@@ -164,7 +167,7 @@ h1, h2, h3 { color: var(--ink); letter-spacing: -.02em; line-height: 1.15; }
   outline: none;
   border-color: var(--olive);
   background: #fff;
-  box-shadow: 0 0 0 4px rgba(40, 100, 240, .14);
+  box-shadow: 0 0 0 4px rgba(27, 122, 87, .14);
 }
 .champ:has(.form-error) input, .form-field:has(.form-error) input,
 .form-field:has(.form-error) select, .form-field:has(.form-error) textarea { border-color: #d9a29b; background: #fffaf9; }
@@ -259,7 +262,7 @@ h1, h2, h3 { color: var(--ink); letter-spacing: -.02em; line-height: 1.15; }
   transition: background .2s var(--ease), color .2s var(--ease), transform .2s var(--ease);
 }
 .side-nav a:hover { color: var(--olive); background: var(--olive-light); text-decoration: none; }
-.side-nav a.active { color: #fff; background: var(--olive); box-shadow: 0 8px 18px -10px rgba(40, 100, 240, .7); }
+.side-nav a.active { color: #fff; background: var(--olive); box-shadow: 0 8px 18px -10px rgba(27, 122, 87, .7); }
 .side-nav a:active { transform: scale(.98); }
 .nav-icon { width: 20px; text-align: center; font-size: 16px; }
 .sidebar-user {
@@ -383,7 +386,7 @@ h1, h2, h3 { color: var(--ink); letter-spacing: -.02em; line-height: 1.15; }
 .data-table th:last-child { border-radius: 0 12px 12px 0; }
 .data-table td { padding: 13px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
 .data-table tbody tr { transition: background .15s; }
-.data-table tbody tr:hover { background: #f8faff; }
+.data-table tbody tr:hover { background: #f6faf8; }
 .data-table tbody tr:last-child td { border-bottom: 0; }
 .data-table .row-selected { background: var(--olive-light); }
 .table-link { color: var(--olive-dark); font-weight: 700; }
@@ -451,7 +454,7 @@ h1, h2, h3 { color: var(--ink); letter-spacing: -.02em; line-height: 1.15; }
 /* --- Accueil --- */
 .hero { display: grid; justify-items: center; gap: 22px; padding: clamp(40px, 9vw, 110px) 0 clamp(32px, 6vw, 70px); text-align: center; }
 .hero h1 { max-width: 14ch; margin: 0; font-size: clamp(42px, 8vw, 88px); font-weight: 800; letter-spacing: -.045em; line-height: .98; }
-.hero h1 em { color: var(--gold); font-style: normal; }
+.hero h1 em { color: var(--olive); font-style: normal; }
 .hero p { max-width: 560px; margin: 0; color: var(--muted); font-size: clamp(16px, 2vw, 19px); }
 .hero-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .hero-actions .button { min-height: 52px; padding-inline: 26px; font-size: 15px; }
@@ -466,7 +469,7 @@ h1, h2, h3 { color: var(--ink); letter-spacing: -.02em; line-height: 1.15; }
 }
 .atout:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
 .atout-icone { display: grid; width: 48px; height: 48px; margin-bottom: 16px; place-items: center; border-radius: 15px; color: var(--olive-dark); background: var(--olive-light); }
-.atout:nth-child(2) .atout-icone { color: #174bd1; background: var(--gold-light); }
+.atout:nth-child(2) .atout-icone { color: #b86b0c; background: var(--gold-light); }
 .atout:nth-child(3) .atout-icone { color: var(--cream); background: var(--forest); }
 .atout h3 { margin: 0 0 6px; font-size: 18px; font-weight: 800; }
 .atout p { margin: 0; color: var(--muted); font-size: 15px; }
@@ -560,9 +563,9 @@ h1, h2, h3 { color: var(--ink); letter-spacing: -.02em; line-height: 1.15; }
 .choix-role label:hover { border-color: #c7cfdb; }
 .choix-role input { position: absolute; opacity: 0; pointer-events: none; }
 .choix-role .pastille-role { display: grid; flex: none; width: 34px; height: 34px; place-items: center; border-radius: 11px; color: var(--olive-dark); background: var(--olive-light); transition: background .2s, color .2s; }
-.choix-role label:has(input:checked) { border-color: var(--olive); background: #fff; box-shadow: 0 0 0 4px rgba(40, 100, 240, .12); }
+.choix-role label:has(input:checked) { border-color: var(--olive); background: #fff; box-shadow: 0 0 0 4px rgba(27, 122, 87, .12); }
 .choix-role label:has(input:checked) .pastille-role { color: var(--cream); background: var(--forest); }
-.choix-role label:has(input:focus-visible) { outline: 3px solid rgba(40, 100, 240, .45); outline-offset: 2px; }
+.choix-role label:has(input:focus-visible) { outline: 3px solid rgba(27, 122, 87, .45); outline-offset: 2px; }
 .ligne-options { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: -4px; font-size: 14px; }
 .ligne-options a { font-weight: 700; }
 .case { display: inline-flex; align-items: center; gap: 10px; color: var(--ink-2); font-weight: 600; cursor: pointer; }
@@ -589,7 +592,7 @@ h1, h2, h3 { color: var(--ink); letter-spacing: -.02em; line-height: 1.15; }
 .carte { padding: 22px 24px; border: 1px solid var(--line-soft); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm); }
 .grille { display: flex; flex-wrap: wrap; gap: 16px; }
 .grille > * { flex: 1 1 260px; min-width: 0; }
-.devoir { padding: 16px; border: 1px solid var(--line-soft); border-radius: 16px; background: #f8faff; transition: transform .25s var(--ease), box-shadow .25s var(--ease); }
+.devoir { padding: 16px; border: 1px solid var(--line-soft); border-radius: 16px; background: #f6faf8; transition: transform .25s var(--ease), box-shadow .25s var(--ease); }
 .devoir:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
 .devoir > div + div { margin-top: 4px; }
 .discret { color: var(--muted); font-size: 14px; }
@@ -691,9 +694,9 @@ a.chiffre:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
     padding: 14px 16px;
     border: 1px solid var(--line-soft);
     border-radius: 16px;
-    background: #f8faff;
+    background: #f6faf8;
   }
-  .data-table.cartes tbody tr:hover { background: #f8faff; }
+  .data-table.cartes tbody tr:hover { background: #f6faf8; }
   .data-table.cartes tr.row-selected { border-color: var(--olive-soft); background: var(--olive-light); }
   .data-table.cartes td { display: grid; grid-template-columns: 96px 1fr; gap: 10px; padding: 0; border: 0; text-align: left; }
   .data-table.cartes td::before { content: attr(data-label); color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; padding-top: 2px; }
