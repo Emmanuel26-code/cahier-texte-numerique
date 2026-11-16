@@ -5,7 +5,7 @@
 {% block contenu %}
 <section class="page-heading">
   <div><h1>Documents</h1><p>Centralisez les supports de cours et les plans associés.</p></div>
-  {% if form %}<a class="button" href="#importer">{% icone "envoi" %} Importer un document</a>{% endif %}
+  {% if user.est_professeur %}<a class=\"button\" href=\"{% url 'documents:importer' %}\">{% icone "envoi" %} Importer un document</a>{% endif %}
 </section>
 
 <section class="panel">
@@ -24,7 +24,7 @@
       <tbody>
         {% for document in documents %}
           <tr class="{% if selection.pk == document.pk %}row-selected{% endif %}">
-            <td><a class="table-link" href="{% url 'documents:liste' %}?document={{ document.pk }}">{{ document.nom_original }}</a>{% if document.vu_le %} <span class="tag success">Vu</span>{% endif %}</td>
+            <td><a class="table-link" href="{% url 'documents:liste' %}?document={{ document.pk }}">{{ document.nom_original }}</a></td>
             <td>{{ document.affectation.professeur.get_full_name|default:document.affectation.professeur.username }}<br><span class="muted">{{ document.affectation.classe.nom }} · {{ document.affectation.matiere.nom }}</span></td>
             <td>{{ document.chapitre|default:"—" }}</td>
             <td>{% if document.type_mime == "application/pdf" %}PDF{% elif document.type_mime == "text/plain" %}TXT{% elif document.type_mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" %}DOCX{% elif document.type_mime == "application/vnd.openxmlformats-officedocument.presentationml.presentation" %}PPTX{% elif document.type_mime == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" %}XLSX{% else %}Fichier{% endif %}</td>
@@ -38,7 +38,7 @@
   </div>
 </section>
 
-<div class="{% if form %}management-grid{% endif %}" style="margin-top:15px">
+<div style="margin-top:15px">
   <section class="panel">
     <div class="panel-heading">
       <div><h2>Détail du document</h2><p>{% if selection %}{{ selection.nom_original }}{% else %}Sélectionnez un document dans la bibliothèque.{% endif %}</p></div>
@@ -54,8 +54,7 @@
       </div>
       <div class="form-actions">
         <a class="button secondary" href="{% url 'documents:telecharger' selection.pk %}">{% icone "telecharger" %} Télécharger</a>
-        {% url 'documents:marquer_vu' selection.pk as url_vu %}{% include "partials/visa.html" with objet=selection url=url_vu peut_viser=user.est_administrateur %}
-        {% if user.est_professeur and selection.affectation.professeur_id == user.id %}
+        {% if user.est_professeur and selection.affectation.professeur_id == user.id and selection.plan_generable %}
           <button type="button" class="button" data-generer data-url="{% url 'plans:generer_plan' selection.pk %}">{% icone "plan" %} Générer un plan</button>
         {% endif %}
       </div>
@@ -73,82 +72,5 @@
     {% endif %}
   </section>
 
-  {% if form %}
-  <section class="panel" id="importer">
-    <div class="panel-heading"><div><h2>Importer un document</h2><p>Choisissez son affectation et son chapitre.</p></div></div>
-    <form method="post" enctype="multipart/form-data" class="form-grid">
-      {% csrf_token %}
-      {% for field in form %}
-        <div class="form-field">
-          <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
-          {{ field }}
-          {% if field.help_text %}<div class="form-help">{{ field.help_text }}</div>{% endif %}
-          {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
-        </div>
-      {% endfor %}
-      {% if form.non_field_errors %}<ul class="errorlist">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
-      <div class="notice">Formats acceptés : PDF, DOCX, PPTX, XLSX et TXT. Taille maximale : {{ taille_max|taille }}.</div>
-      <div class="form-actions"><button class="button" type="submit">{% icone "envoi" %} Importer</button><a class="button secondary" href="{% url 'documents:liste' %}">Annuler</a></div>
-    </form>
-  </section>
-  {% endif %}
 </div>
-
-<script>
-(function () {
-  function arbre(noeuds) {
-    var liste = document.createElement("ul");
-    noeuds.forEach(function (noeud) {
-      var item = document.createElement("li");
-      item.textContent = noeud.libelle;
-      if (noeud.enfants && noeud.enfants.length) {
-        item.appendChild(arbre(noeud.enfants));
-      }
-      liste.appendChild(item);
-    });
-    return liste;
-  }
-
-  var button = document.querySelector("[data-generer]");
-  if (!button) return;
-  var libelleInitial = button.innerHTML;
-  var csrf = "{{ csrf_token }}";
-  button.addEventListener("click", function () {
-    var zone = document.querySelector("[data-zone-plan]");
-    button.disabled = true;
-    button.textContent = "Génération en cours…";
-    zone.textContent = "";
-    fetch(button.dataset.url, { method: "POST", headers: { "X-CSRFToken": csrf }, credentials: "same-origin" })
-      .then(function (response) {
-        return response.json().catch(function () { return {}; }).then(function (data) {
-          if (!response.ok) throw new Error(data.erreur || "La génération a échoué.");
-          var result = document.createElement("div");
-          result.className = "notice";
-          var label = document.createElement("strong");
-          label.textContent = "Plan proposé par l’IA (à valider) :";
-          result.appendChild(label);
-          result.appendChild(arbre(data.titres));
-          if (data.url) {
-            var lien = document.createElement("a");
-            lien.className = "button";
-            lien.href = data.url;
-            lien.textContent = "Relire, corriger et valider ce plan";
-            result.appendChild(lien);
-          }
-          zone.appendChild(result);
-        });
-      })
-      .catch(function (error) {
-        var result = document.createElement("p");
-        result.className = "message error";
-        result.textContent = error.message || "Impossible de joindre le serveur.";
-        zone.appendChild(result);
-      })
-      .finally(function () {
-        button.disabled = false;
-        button.innerHTML = libelleInitial;
-      });
-  });
-})();
-</script>
 {% endblock %}

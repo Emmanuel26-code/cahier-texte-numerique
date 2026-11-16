@@ -27,18 +27,33 @@ def valider_taille(fichier):
         )
 
 
-def _verifier_docx(fichier):
+# Documents Office : ce sont des archives ZIP qui doivent contenir ces parties.
+PARTIES_OFFICE = {
+    "docx": ("word/document.xml", "document Word (DOCX)"),
+    "pptx": ("ppt/presentation.xml", "présentation PowerPoint (PPTX)"),
+    "xlsx": ("xl/workbook.xml", "classeur Excel (XLSX)"),
+}
+
+
+def _verifier_office(fichier, extension):
+    partie, nom = PARTIES_OFFICE[extension]
     try:
         with zipfile.ZipFile(fichier) as archive:
             noms = archive.namelist()
             infos = archive.infolist()
     except zipfile.BadZipFile:
-        raise ValidationError("Ce fichier n'est pas un vrai document Word (DOCX).")
+        raise ValidationError(f"Ce fichier n'est pas un vrai {nom}.")
 
-    if "[Content_Types].xml" not in noms or "word/document.xml" not in noms:
-        raise ValidationError("Ce fichier n'est pas un vrai document Word (DOCX).")
+    if "[Content_Types].xml" not in noms or partie not in noms:
+        raise ValidationError(f"Ce fichier n'est pas un vrai {nom}.")
     if len(noms) > MAX_ENTREES_ZIP or sum(i.file_size for i in infos) > MAX_DECOMPRESSE_OCTETS:
-        raise ValidationError("Ce document Word est anormalement volumineux une fois décompressé.")
+        raise ValidationError("Ce fichier est anormalement volumineux une fois décompressé.")
+    if any(n.lower().endswith("vbaproject.bin") for n in noms):
+        raise ValidationError("Les fichiers contenant des macros ne sont pas acceptés.")
+
+
+def _verifier_docx(fichier):
+    _verifier_office(fichier, "docx")
 
 
 def valider_contenu(fichier):
@@ -55,8 +70,8 @@ def valider_contenu(fichier):
     if extension == "pdf":
         if not debut.startswith(b"%PDF-"):
             raise ValidationError("Ce fichier n'est pas un vrai PDF.")
-    elif extension == "docx":
-        _verifier_docx(fichier)
+    elif extension in PARTIES_OFFICE:
+        _verifier_office(fichier, extension)
     elif extension == "txt":
         if b"\x00" in debut:  
             raise ValidationError("Ce fichier n'est pas un fichier texte valide.")

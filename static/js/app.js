@@ -129,6 +129,69 @@
     });
   }
 
+  /* --- Confirmation avant une action irréversible (data-confirm) -------------- */
+  document.addEventListener("submit", function (e) {
+    var cible = e.submitter && e.submitter.hasAttribute("data-confirm") ? e.submitter : e.target;
+    var question = cible.getAttribute && cible.getAttribute("data-confirm");
+    if (question && !window.confirm(question)) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  }, true);
+
+  /* --- Génération d'un plan par l'IA (page Documents) ------------------------ */
+  var boutonPlan = document.querySelector("[data-generer]");
+  if (boutonPlan) {
+    var jeton = (document.querySelector("meta[name=csrf-token]") || {}).content || "";
+    var libelleInitial = boutonPlan.innerHTML;
+    var arbre = function (noeuds) {
+      var liste = document.createElement("ul");
+      noeuds.forEach(function (noeud) {
+        var item = document.createElement("li");
+        item.textContent = noeud.libelle;
+        if (noeud.enfants && noeud.enfants.length) item.appendChild(arbre(noeud.enfants));
+        liste.appendChild(item);
+      });
+      return liste;
+    };
+    boutonPlan.addEventListener("click", function () {
+      var zone = document.querySelector("[data-zone-plan]");
+      boutonPlan.disabled = true;
+      boutonPlan.textContent = "Génération en cours…";
+      zone.textContent = "";
+      fetch(boutonPlan.dataset.url, { method: "POST", headers: { "X-CSRFToken": jeton }, credentials: "same-origin" })
+        .then(function (reponse) {
+          return reponse.json().catch(function () { return {}; }).then(function (donnees) {
+            if (!reponse.ok) throw new Error(donnees.erreur || "La génération a échoué.");
+            var resultat = document.createElement("div");
+            resultat.className = "notice";
+            var titre = document.createElement("strong");
+            titre.textContent = "Plan proposé par l’IA (à valider) :";
+            resultat.appendChild(titre);
+            resultat.appendChild(arbre(donnees.titres || []));
+            if (donnees.url) {
+              var lien = document.createElement("a");
+              lien.className = "button";
+              lien.href = donnees.url;
+              lien.textContent = "Relire, corriger et valider ce plan";
+              resultat.appendChild(lien);
+            }
+            zone.appendChild(resultat);
+          });
+        })
+        .catch(function (erreur) {
+          var message = document.createElement("p");
+          message.className = "message error";
+          message.textContent = erreur.message || "Impossible de joindre le serveur.";
+          zone.appendChild(message);
+        })
+        .finally(function () {
+          boutonPlan.disabled = false;
+          boutonPlan.innerHTML = libelleInitial;
+        });
+    });
+  }
+
   /* --- Bouton « en cours » à l'envoi d'un formulaire ------------------------ */
   document.querySelectorAll("form[data-chargement]").forEach(function (f) {
     f.addEventListener("submit", function () {

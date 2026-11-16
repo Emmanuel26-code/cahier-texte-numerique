@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 from django.shortcuts import redirect, render
@@ -14,7 +15,6 @@ def accueil(request):
 
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
     path("comptes/", include("apps.comptes.urls")),
     path("gestion/", include("apps.academique.urls")),
     path("documents/", include("apps.documents.urls")),
@@ -24,3 +24,6 @@ urlpatterns = [
     path("notifications/", include("apps.notifications.urls")),
     path("", accueil, name="accueil"),
 ]
+
+if settings.ADMIN_DJANGO_ACTIF:
+    urlpatterns.insert(0, path("admin/", admin.site.urls))

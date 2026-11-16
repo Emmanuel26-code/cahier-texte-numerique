@@ -40,10 +40,15 @@ class InscriptionForm(UserCreationForm):
         self.fields["email"].widget.attrs.update({"inputmode": "email", "autocapitalize": "none", "spellcheck": "false"})
 
     def clean_email(self):
+        # Pas d'erreur si l'adresse est déjà utilisée : la vue répond comme pour une nouvelle
+        # inscription et prévient le propriétaire par e-mail (on ne révèle pas qui est inscrit).
         email = self.cleaned_data["email"].strip().lower()
-        if Utilisateur.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError("Un compte existe déjà avec cette adresse e-mail.")
+        self.adresse_deja_utilisee = Utilisateur.objects.filter(email__iexact=email).exists()
         return email
+
+    def validate_unique(self):
+        if not getattr(self, "adresse_deja_utilisee", False):
+            super().validate_unique()
 
     def clean(self):
         donnees = super().clean()

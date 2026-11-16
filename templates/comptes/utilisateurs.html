@@ -51,7 +51,7 @@
         <p>{% if selection.email_verifie %}Adresse e-mail confirmée. Vérifiez que cette personne enseigne bien dans l’établissement avant de valider.{% else %}L’adresse e-mail n’est pas encore confirmée : la personne ne pourra se connecter qu’après l’avoir confirmée.{% endif %}</p>
         <div class="form-actions">
           <form method="post" action="{% url 'valider_professeur' selection.pk %}">{% csrf_token %}<button class="button" type="submit">Valider le compte</button></form>
-          <form method="post" action="{% url 'refuser_professeur' selection.pk %}" onsubmit="return confirm('Refuser cette demande ? Le compte sera supprimé.');">{% csrf_token %}<button class="button secondary" type="submit">Refuser</button></form>
+          <form method="post" action="{% url 'refuser_professeur' selection.pk %}" data-confirm="Refuser cette demande ? Le compte sera supprimé.">{% csrf_token %}<button class="button secondary" type="submit">Refuser</button></form>
         </div>
       </div>
     {% endif %}

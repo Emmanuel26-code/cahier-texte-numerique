@@ -73,6 +73,9 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = "comptes.Utilisateur"
 # Connexion par e-mail + limite de tentatives + e-mail confirmé + professeur validé
 AUTHENTICATION_BACKENDS = ["apps.comptes.securite.BackendConnexion"]
+# Admin technique de Django (/admin/) : désactivée sauf besoin de dépannage (DJANGO_ADMIN_ACTIF=True).
+# Les pages Utilisateurs, Référentiels et Affectations couvrent la gestion courante.
+ADMIN_DJANGO_ACTIF = env_bool("DJANGO_ADMIN_ACTIF", False)
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "tableau_de_bord:accueil"  # oriente chaque rôle vers son tableau de bord
 LOGOUT_REDIRECT_URL = "login"
@@ -86,6 +89,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "config.securite.EnTetesSecurite",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -216,6 +220,8 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = DOCUMENT_MAX_OCTETS
 # se termine à la fermeture du navigateur (voir apps.comptes.views.Connexion).
 SESSION_COOKIE_AGE = 60 * 24 * 3600
 SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_HTTPONLY = True  # le jeton CSRF est lu dans la balise meta, jamais dans le cookie
+SESSION_COOKIE_HTTPONLY = True
 
 
 # --- E-mails (réinitialisation du mot de passe) ------------------------------------------

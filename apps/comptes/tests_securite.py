@@ -43,12 +43,18 @@ class LimiteTentativesConnexionTests(TestCase):
             self.connecter("mauvais")
         self.assertRedirects(self.connecter(MDP), "/tableau-de-bord/", fetch_redirect_response=False)
 
-    def test_l_admin_django_est_aussi_protege(self):
-        Utilisateur.objects.create_superuser(email="chef@ecole.ci", password=MDP)
+    def test_le_blocage_vaut_pour_toute_authentification(self):
+        """Le contrôle est dans le backend : il protège aussi l'admin Django si on la réactive."""
+        from django.contrib.auth import authenticate
+        from django.test import RequestFactory
+
+        requete = RequestFactory().post("/", REMOTE_ADDR="10.0.0.2")
         for _ in range(5):
-            self.client.post("/admin/login/", {"username": "chef@ecole.ci", "password": "mauvais"}, REMOTE_ADDR="10.0.0.2")
-        self.client.post("/admin/login/", {"username": "chef@ecole.ci", "password": MDP}, REMOTE_ADDR="10.0.0.2")
-        self.assertNotIn("_auth_user_id", self.client.session)
+            authenticate(requete, username="awa@ecole.ci", password="mauvais")
+        self.assertIsNone(authenticate(requete, username="awa@ecole.ci", password=MDP))
+
+    def test_admin_django_desactivee_par_defaut(self):
+        self.assertEqual(self.client.get("/admin/").status_code, 404)
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend", EMAIL_CONFIGURE=True)
@@ -244,3 +250,41 @@ class ClasseChoisieALInscriptionTests(TestCase):
         admin = Utilisateur.objects.create_user(email="dir@ecole.ci", password=MDP, role=Role.ADMINISTRATEUR)
         self.client.force_login(admin)
         self.assertContains(self.client.get("/comptes/utilisateurs/"), "Demande : 3e C")
+
+
+class EnTetesEtPagesTests(TestCase):
+    def test_politique_de_securite_du_contenu(self):
+        reponse = self.client.get("/comptes/connexion/")
+        csp = reponse["Content-Security-Policy"]
+        self.assertIn("script-src 'self'", csp)
+        self.assertIn("frame-ancestors 'none'", csp)
+        self.assertIn("camera=()", reponse["Permissions-Policy"])
+
+    def test_aucun_script_dans_les_pages(self):
+        import pathlib
+        racines = [pathlib.Path("templates"), pathlib.Path("apps")]
+        fautifs = [str(f) for r in racines for f in r.rglob("*.html")
+                   if "/emails/" not in f.as_posix()
+                   and re.search(r"<script>|on(click|submit|change|load)=", f.read_text(encoding="utf-8"))]
+        self.assertEqual(fautifs, [])  # sinon la CSP les bloquerait
+
+    def test_jeton_csrf_dans_une_balise_meta(self):
+        self.assertContains(self.client.get("/comptes/connexion/"), '<meta name="csrf-token"')
+
+    def test_page_404_personnalisee(self):
+        reponse = self.client.get("/page-qui-n-existe-pas/")
+        self.assertContains(reponse, "Page introuvable", status_code=404)
+
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend", EMAIL_CONFIGURE=True)
+class InscriptionAdresseExistanteTests(TestCase):
+    def test_le_titulaire_est_prevenu(self):
+        cache.clear()
+        Utilisateur.objects.create_user(email="awa@ecole.ci", password=MDP)
+        self.client.post("/comptes/inscription/", {
+            "first_name": "X", "last_name": "Y", "email": "awa@ecole.ci", "role": "eleve", "classe": "6e A",
+            "password1": MDP, "password2": MDP,
+        })
+        self.assertEqual(mail.outbox[-1].to, ["awa@ecole.ci"])
+        self.assertIn("Tentative d’inscription", mail.outbox[-1].subject)
+        self.assertTrue(Utilisateur.objects.get(email="awa@ecole.ci").check_password(MDP))  # compte inchangé

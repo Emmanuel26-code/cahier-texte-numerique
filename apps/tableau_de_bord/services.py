@@ -8,6 +8,7 @@ et un plan de cours à une affectation via son document (Plan.document.affectati
 """
 from apps.cahier.models import Seance
 from apps.plans.models import Plan
+from apps.plans.services.avancement import par_affectation, par_plan
 from apps.notifications.services import compter_non_lues
 
 NB_ELEMENTS = 5
@@ -38,7 +39,7 @@ def donnees_tableau_bord_eleve(eleve):
         "classes": classes,
         "seances": list(seances_classe[:NB_ELEMENTS]),
         "travaux": list(seances_classe.exclude(travail_a_faire="")[:NB_ELEMENTS]),
-        "plans": list(plans[:NB_PLANS]),
+        "plans": _avec_avancement(list(plans[:NB_PLANS])),
         "nb_non_lues": compter_non_lues(eleve),
     }
 
@@ -61,6 +62,9 @@ def donnees_tableau_bord_professeur(professeur):
         .order_by("classe__nom", "matiere__nom")
     )
     seances = Seance.objects.filter(affectation__professeur=professeur, supprime=False)
+    avancements = par_affectation(a.pk for a in affectations)
+    for a in affectations:
+        a.avancement = avancements.get(a.pk)
     return {
         "affectations": affectations,
         "seances_recentes": list(
@@ -105,7 +109,6 @@ def donnees_tableau_bord_administrateur():
         "nb_professeurs_a_valider": Utilisateur.objects.filter(
             role=Utilisateur.Role.PROFESSEUR, en_attente_validation=True, email_verifie=True).count(),
         "nb_seances_a_viser": Seance.objects.filter(supprime=False, vu_le__isnull=True).count(),
-        "nb_cours_a_viser": Document.objects.filter(vu_le__isnull=True).count(),
         "affectations_sans_seance": list(
             Affectation.objects.annotate(n=Count("seances", filter=Q(seances__supprime=False)))
             .filter(n=0)
@@ -120,3 +123,10 @@ def donnees_tableau_bord_administrateur():
             )[:NB_ELEMENTS]
         ),
     }
+
+
+def _avec_avancement(plans):
+    avancements = par_plan(p.pk for p in plans)
+    for plan in plans:
+        plan.avancement = avancements.get(plan.pk)
+    return plans

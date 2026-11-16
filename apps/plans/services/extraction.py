@@ -1,4 +1,4 @@
-"""Extraction du texte d'un cours (DOCX, PDF, TXT) vers du Markdown léger.
+"""Extraction du texte d'un cours (DOCX, PPTX, PDF, TXT) vers du Markdown léger.
 
 Le but n'est pas de reproduire le document mais de donner à l'IA des indices
 fiables sur la structure : les titres sont préfixés par des `#` (comme en
@@ -15,7 +15,7 @@ from django.conf import settings
 
 from .erreurs import ExtractionError
 
-EXTENSIONS_ACCEPTEES = (".docx", ".pdf", ".txt")
+EXTENSIONS_ACCEPTEES = (".docx", ".pptx", ".pdf", ".txt")
 
 _TITRE_COURT_MAX = 100  # au-delà, une ligne en gras est un paragraphe, pas un titre
 _NIVEAU_TITRE_MAX = 4
@@ -27,6 +27,8 @@ def extraire_texte(fichier, nom: str) -> str:
     extension = os.path.splitext(nom or "")[1].lower()
     if extension == ".docx":
         texte = _extraire_docx(fichier)
+    elif extension == ".pptx":
+        texte = _extraire_pptx(fichier)
     elif extension == ".pdf":
         texte = _extraire_pdf(fichier, settings.IA_MAX_PAGES, settings.IA_MAX_CHARS)
     elif extension == ".txt":
@@ -109,6 +111,41 @@ def _est_ligne_en_gras(paragraphe, texte: str) -> bool:
     if len(texte) > _TITRE_COURT_MAX or not paragraphe.runs:
         return False
     return all(run.bold for run in paragraphe.runs if run.text.strip())
+
+
+# --- PPTX ------------------------------------------------------------------
+
+_NS_A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+_NS_P = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
+_DIAPO = re.compile(r"^ppt/slides/slide(\d+)\.xml$")
+
+
+def _extraire_pptx(fichier) -> str:
+    """Une présentation : le titre de chaque diapositive devient un titre (#), le reste du texte suit."""
+    from xml.etree import ElementTree
+
+    try:
+        with zipfile.ZipFile(fichier) as archive:
+            if sum(info.file_size for info in archive.infolist()) > _DOCX_DECOMPRESSE_MAX:
+                raise ExtractionError("Cette présentation est trop volumineuse une fois décompressée pour être analysée.")
+            diapos = sorted(
+                (int(m.group(1)), nom) for nom in archive.namelist() if (m := _DIAPO.match(nom))
+            )
+            lignes = []
+            for _, nom in diapos:
+                racine = ElementTree.fromstring(archive.read(nom))
+                for forme in racine.iter(f"{_NS_P}sp"):
+                    espace = forme.find(f".//{_NS_P}nvPr/{_NS_P}ph")
+                    est_titre = espace is not None and espace.get("type") in ("title", "ctrTitle")
+                    for paragraphe in forme.iter(f"{_NS_A}p"):
+                        texte = "".join(t.text or "" for t in paragraphe.iter(f"{_NS_A}t")).strip()
+                        if texte:
+                            lignes.append(f"# {texte}" if est_titre else texte)
+    except zipfile.BadZipFile as exc:
+        raise ExtractionError("Impossible de lire cette présentation : elle est corrompue ou protégée.") from exc
+    except ElementTree.ParseError as exc:
+        raise ExtractionError("Impossible de lire cette présentation : elle est corrompue.") from exc
+    return "\n\n".join(lignes)
 
 
 # --- PDF -------------------------------------------------------------------

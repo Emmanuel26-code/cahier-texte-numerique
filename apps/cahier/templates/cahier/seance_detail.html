@@ -10,7 +10,7 @@
     {% url 'cahier:marquer_vu' seance.pk as url_vu %}{% include "partials/visa.html" with objet=seance url=url_vu %}
     {% if peut_modifier %}
       <a class="button" href="{% url 'cahier:modifier' seance.pk %}">Modifier</a>
-      <form method="post" action="{% url 'cahier:supprimer' seance.pk %}" onsubmit="return confirm('Supprimer cette séance ? Elle restera visible dans l’historique.');">
+      <form method="post" action="{% url 'cahier:supprimer' seance.pk %}" data-confirm="Supprimer cette séance ? Elle restera visible dans l’historique.">
         {% csrf_token %}<button class="button secondary" type="submit">Supprimer</button>
       </form>
     {% endif %}
