@@ -15,7 +15,7 @@
   {% block styles %}{% endblock %}
 </head>
 <body>
-{% if user.is_authenticated %}
+{% if user.is_authenticated and request.resolver_match.url_name != "login" %}
   <div class="app-shell">
     <aside class="sidebar" id="navigation" aria-label="Menu principal">
       <a class="brand" href="{% url 'tableau_de_bord:accueil' %}">

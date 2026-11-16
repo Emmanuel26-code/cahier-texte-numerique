@@ -3,6 +3,9 @@
 {% block formulaire %}
   <h1>Bienvenue</h1>
   <p class="sous-titre">Connectez-vous avec votre adresse e-mail.</p>
+  {% if user.is_authenticated %}
+    <div class="notice">Vous êtes connecté en tant que <strong>{{ user.get_full_name|default:user.email }}</strong>. Connectez-vous ci-dessous pour changer de compte, ou <a href="{% url 'tableau_de_bord:accueil' %}">retournez à votre espace</a>.</div>
+  {% endif %}
   <form method="post" novalidate data-chargement data-connexion>
     {% csrf_token %}
     {% if form.non_field_errors %}
